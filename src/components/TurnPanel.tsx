@@ -28,13 +28,13 @@ export function TurnPanel({
   return (
     <>
       <div className="turn-stats">
-        <div><span>Turn score</span><strong>{turnScore.toLocaleString()}</strong></div>
+        <div><span>本回合</span><strong>{turnScore.toLocaleString()}</strong></div>
         <div className={!selectedValid && hasSelection ? 'invalid-stat' : ''}>
-          <span>Selected</span>
-          <strong>{hasSelection ? selectedScore.toLocaleString() : '—'}{doubledSelection && <small>DOUBLE</small>}</strong>
+          <span>当前选择</span>
+          <strong>{hasSelection ? selectedScore.toLocaleString() : '—'}{doubledSelection && <small>双倍</small>}</strong>
         </div>
-        <div><span>Dice remaining</span><strong>{diceRemaining}</strong></div>
-        <div className={`risk risk-${risk.tone}`}><span>Risk</span><strong>{risk.label}</strong></div>
+        <div><span>剩余骰子</span><strong>{diceRemaining}</strong></div>
+        <div className={`risk risk-${risk.tone}`}><span>风险</span><strong>{risk.label}</strong></div>
       </div>
       <div className={`game-message ${isHotDice ? 'hot-message' : ''}`} role="status" aria-live="polite">
         <span aria-hidden="true">{isHotDice ? '✦' : currentPlayer === 'human' ? '◆' : '♜'}</span>

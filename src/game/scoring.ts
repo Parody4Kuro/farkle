@@ -6,13 +6,18 @@ interface SearchResult {
   usedMask: number
 }
 
-const STRAIGHTS: Array<{ sequence: DieFace[]; score: number; label: string }> = [
+export const STRAIGHT_RULES: Array<{ sequence: DieFace[]; score: number; label: string }> = [
   { sequence: [1, 2, 3, 4, 5, 6], score: 1500, label: 'Grand straight' },
   { sequence: [2, 3, 4, 5, 6], score: 750, label: 'High straight' },
   { sequence: [1, 2, 3, 4, 5], score: 500, label: 'Low straight' },
 ]
 
-function kindScore(face: DieFace, count: number): number {
+export const SINGLE_SCORES: Partial<Record<DieFace, number>> = { 1: 100, 5: 50 }
+export const MIN_KIND_DICE = 3
+export const MAX_KIND_DICE = 6
+
+export function kindScore(face: DieFace, count: number): number {
+  if (count < MIN_KIND_DICE || count > MAX_KIND_DICE) return 0
   const triple = face === 1 ? 1000 : face * 100
   return triple * 2 ** (count - 3)
 }
@@ -48,10 +53,11 @@ export function enumerateScoringGroups(dice: DiceValue[]): ScoreGroup[] {
   }
 
   dice.forEach((value, index) => {
-    if (value === 1 || value === 5) {
+    const singleScore = value === JOKER ? undefined : SINGLE_SCORES[value]
+    if (singleScore) {
       add({
         kind: 'single',
-        score: value === 1 ? 100 : 50,
+        score: singleScore,
         values: [value],
         dieIndices: [index],
         label: `Single ${value}`,
@@ -63,7 +69,7 @@ export function enumerateScoringGroups(dice: DiceValue[]): ScoreGroup[] {
     const indices = indicesForMask(mask, dice.length)
     const values = indices.map((index) => dice[index])
 
-    if (indices.length >= 3) {
+    if (indices.length >= MIN_KIND_DICE && indices.length <= MAX_KIND_DICE) {
       for (let face = 1 as DieFace; face <= 6; face = (face + 1) as DieFace) {
         if (values.every((value) => value === JOKER || value === face)) {
           const jokerCount = values.filter((value) => value === JOKER).length
@@ -79,7 +85,7 @@ export function enumerateScoringGroups(dice: DiceValue[]): ScoreGroup[] {
       }
     }
 
-    for (const straight of STRAIGHTS) {
+    for (const straight of STRAIGHT_RULES) {
       if (indices.length !== straight.sequence.length) continue
       const fixed = values.filter((value): value is DieFace => value !== JOKER)
       const fixedSet = new Set(fixed)
@@ -114,16 +120,22 @@ function isBetter(candidate: SearchResult, current: SearchResult): boolean {
   return candidate.groups.length < current.groups.length
 }
 
+function kindFace(group: ScoreGroup): DieFace | undefined {
+  if (group.kind !== 'kind') return undefined
+  return group.jokerAs?.[0] ?? (group.values.find((value): value is DieFace => value !== JOKER))
+}
+
 function searchBest(dice: DiceValue[], requireAll: boolean): SearchResult {
   const groups = enumerateScoringGroups(dice).map((group) => ({
     ...group,
     mask: group.dieIndices.reduce((mask, index) => mask | (1 << index), 0),
   }))
   const fullMask = (1 << dice.length) - 1
-  const memo = new Map<number, SearchResult | null>()
+  const memo = new Map<string, SearchResult | null>()
 
-  const visit = (usedMask: number): SearchResult | null => {
-    const cached = memo.get(usedMask)
+  const visit = (usedMask: number, usedKindFaces = 0): SearchResult | null => {
+    const memoKey = `${usedMask}:${usedKindFaces}`
+    const cached = memo.get(memoKey)
     if (cached !== undefined) return cached
 
     let best: SearchResult | null = requireAll
@@ -132,7 +144,10 @@ function searchBest(dice: DiceValue[], requireAll: boolean): SearchResult {
 
     for (const group of groups) {
       if (group.mask & usedMask) continue
-      const next = visit(usedMask | group.mask)
+      const face = kindFace(group)
+      const faceBit = face ? 1 << face : 0
+      if (faceBit && usedKindFaces & faceBit) continue
+      const next = visit(usedMask | group.mask, usedKindFaces | faceBit)
       if (!next) continue
       const { mask: _mask, ...plainGroup } = group
       const candidate: SearchResult = {
@@ -143,7 +158,7 @@ function searchBest(dice: DiceValue[], requireAll: boolean): SearchResult {
       if (!best || isBetter(candidate, best)) best = candidate
     }
 
-    memo.set(usedMask, best)
+    memo.set(memoKey, best)
     return best
   }
 

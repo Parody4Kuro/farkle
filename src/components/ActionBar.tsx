@@ -1,64 +1,56 @@
-import type { GamePhase, ModifierUsage } from '../game/types'
+import { canUseModifier } from '../game/modifiers'
+import type { GameModifier, GamePhase, ModifierUsage } from '../game/types'
 
 interface ActionBarProps {
   phase: GamePhase
-  isRolling: boolean
   humanTurn: boolean
   selectionValid: boolean
   hasSelection: boolean
   canBank: boolean
-  hasGoldenOne: boolean
-  hasDoubleDown: boolean
+  abilities: GameModifier[]
   modifierUsage: ModifierUsage
   onRoll: () => void
   onBank: () => void
-  onGoldenOne: () => void
-  onDoubleDown: () => void
+  onUseModifier: (modifierId: string) => void
 }
 
 export function ActionBar({
   phase,
-  isRolling,
   humanTurn,
   selectionValid,
   hasSelection,
   canBank,
-  hasGoldenOne,
-  hasDoubleDown,
+  abilities,
   modifierUsage,
   onRoll,
   onBank,
-  onGoldenOne,
-  onDoubleDown,
+  onUseModifier,
 }: ActionBarProps) {
   const ready = phase === 'ready'
   const selecting = phase === 'selecting'
-  const disabled = !humanTurn || isRolling
+  const rolling = phase === 'rolling'
+  const disabled = !humanTurn || rolling
 
   return (
     <div className="actions-wrap">
-      {(hasGoldenOne || hasDoubleDown) && selecting && (
-        <div className="ability-row" aria-label="Modifier abilities">
-          {hasGoldenOne && (
-            <button
-              className="ability-button"
-              type="button"
-              disabled={disabled || modifierUsage.goldenOneUsed}
-              onClick={onGoldenOne}
-            >
-              <span>☀</span> Golden One {modifierUsage.goldenOneUsed && '· spent'}
-            </button>
-          )}
-          {hasDoubleDown && (
-            <button
-              className="ability-button"
-              type="button"
-              disabled={disabled || modifierUsage.doubleDownUsed || !selectionValid}
-              onClick={onDoubleDown}
-            >
-              <span>Ⅱ</span> Double Down {modifierUsage.doubleDownUsed && '· spent'}
-            </button>
-          )}
+      {abilities.length > 0 && selecting && (
+        <div className="ability-row" aria-label="徽章能力">
+          {abilities.map((modifier) => {
+            const spent = !canUseModifier(modifier, modifierUsage)
+            const needsValidSelection = modifier.activation?.ability === 'double-down'
+            return (
+              <button
+                className="ability-button"
+                type="button"
+                disabled={disabled || spent || (needsValidSelection && !selectionValid)}
+                key={modifier.id}
+                onClick={() => onUseModifier(modifier.id)}
+              >
+                <span aria-hidden="true">{modifier.symbol}</span>
+                {modifier.name} {spent && '· 已使用'}
+              </button>
+            )
+          })}
         </div>
       )}
       <div className="action-bar">
@@ -69,7 +61,7 @@ export function ActionBar({
           onClick={onRoll}
         >
           <span aria-hidden="true">◆</span>
-          {isRolling ? '掷骰中…' : ready ? '掷骰子' : '锁定并继续掷骰'}
+          {rolling ? '掷骰中…' : ready ? '掷骰子' : '锁定并继续掷骰'}
         </button>
         {!ready && (
           <button

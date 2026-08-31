@@ -23,6 +23,8 @@ describe('calculateBestScore', () => {
     [[1, 2, 3, 4, 5, 6], 1500],
     [[1, 1, 1, 5, 5, 2], 1100],
     [[2, 2, 2, 1, 5, 6], 350],
+    [[1, 1, 1, 1, 1, 1, 1], 8100],
+    [[2, 2, 2, 2, 2, 2, 2], 1600],
   ])('scores %j as %i', (dice, expected) => {
     expect(calculateBestScore(dice).score).toBe(expected)
   })
@@ -76,5 +78,18 @@ describe('validateSelectedDice', () => {
     expect(firstRoll.score).toBe(100)
     expect(secondRoll.score).toBe(200)
     expect(secondRoll.score).not.toBe(1000)
+  })
+
+  it('caps a same-kind group at six dice when Loaded Hand grants seven', () => {
+    expect(validateSelectedDice([1, 1, 1, 1, 1, 1, 1])).toMatchObject({
+      valid: true,
+      score: 8100,
+      unusedDice: [],
+    })
+    expect(validateSelectedDice([2, 2, 2, 2, 2, 2, 2])).toMatchObject({
+      valid: false,
+      score: 1600,
+      unusedDice: [2],
+    })
   })
 })

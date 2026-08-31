@@ -28,7 +28,7 @@ export function DiceTable({
 
   return (
     <div className="dice-stage">
-      <div className="dice-row" aria-live="polite" aria-label="Dice on the table">
+      <div className="dice-row" role="group" aria-label="桌面上的骰子">
         {showPlaceholders && placeholders.map((index) => (
           <Dice
             key={`placeholder-${index}`}
@@ -50,14 +50,14 @@ export function DiceTable({
       </div>
       <div className={`selection-caption ${rolledDice.some((die) => die.selected) && !selectionValid ? 'is-invalid' : ''}`}>
         {rolledDice.some((die) => die.selected)
-          ? selectionValid ? 'A legal scoring selection' : 'Selection contains non-scoring dice'
-          : phase === 'selecting' ? 'Select the dice you wish to keep' : ' '}
+          ? selectionValid ? '当前选择可以计分' : '当前选择含有不能计分的骰子'
+          : phase === 'selecting' ? '选择想要保留的计分骰' : ' '}
       </div>
       <div className="locked-tray">
-        <span className="tray-label">Scoring tray</span>
+        <span className="tray-label">计分托盘</span>
         <div className="locked-row">
           {lockedDice.length === 0 ? (
-            <span className="empty-tray">Kept dice will rest here until the turn ends</span>
+            <span className="empty-tray">锁定的计分骰会留在这里，直到本回合结束</span>
           ) : lockedDice.map((die) => (
             <Dice key={`locked-${die.id}`} value={die.value} locked compact disabled />
           ))}

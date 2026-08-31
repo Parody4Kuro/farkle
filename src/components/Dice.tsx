@@ -30,16 +30,11 @@ export function Dice({
   name,
   onClick,
 }: DiceProps) {
-  const label = value === JOKER ? 'Joker die showing a skull' : `Die showing ${value}`
-  return (
-    <button
-      className={`die ${selected ? 'is-selected' : ''} ${locked ? 'is-locked' : ''} ${rolling ? 'is-rolling' : ''} ${compact ? 'is-compact' : ''}`}
-      type="button"
-      aria-label={`${label}${name ? `, ${name}` : ''}${selected ? ', selected' : ''}`}
-      aria-pressed={disabled ? undefined : selected}
-      disabled={disabled}
-      onClick={onClick}
-    >
+  const label = value === JOKER ? 'Joker 骰，显示骷髅面' : `骰子点数 ${value}`
+  const className = `die ${selected ? 'is-selected' : ''} ${locked ? 'is-locked' : ''} ${rolling ? 'is-rolling' : ''} ${compact ? 'is-compact' : ''}`
+  const accessibleLabel = `${label}${name ? `，${name}` : ''}${selected ? '，已选择' : ''}`
+  const face = (
+    <>
       {value === JOKER ? (
         <span className="joker-face" aria-hidden="true">☠</span>
       ) : (
@@ -48,6 +43,16 @@ export function Dice({
         </span>
       )}
       {locked && <span className="lock-mark" aria-hidden="true">◆</span>}
-    </button>
+    </>
   )
+
+  if (!disabled && onClick) {
+    return (
+      <button className={className} type="button" aria-label={accessibleLabel} aria-pressed={selected} onClick={onClick}>
+        {face}
+      </button>
+    )
+  }
+
+  return <span className={className} role="img" aria-label={accessibleLabel}>{face}</span>
 }

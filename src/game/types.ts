@@ -8,7 +8,7 @@ export type GamePhase =
   | 'ready'
   | 'rolling'
   | 'selecting'
-  | 'ai_turn'
+  | 'ai_thinking'
   | 'bust'
   | 'game_over'
 
@@ -64,14 +64,32 @@ export interface GameStats {
 }
 
 export interface ModifierUsage {
-  luckyCharmUsed: boolean
-  goldenOneUsed: boolean
-  doubleDownUsed: boolean
+  turn: Record<string, number>
+  game: Record<string, number>
+}
+
+export type ModifierUseScope = 'turn' | 'game'
+export type ModifierAbility = 'golden-one' | 'double-down'
+
+export interface ModifierActivation {
+  ability: ModifierAbility
+  scope: ModifierUseScope
+  maxUses: number
+}
+
+export interface ModifierUseLimit {
+  scope: ModifierUseScope
+  maxUses: number
+}
+
+export interface AudioPreferences {
+  enabled: boolean
+  volume: number
 }
 
 export interface GameState {
   currentPlayer: PlayerId
-  targetScore: number
+  config: GameSettings
   scores: Record<PlayerId, number>
   turnScore: number
   rolledDice: DieInstance[]
@@ -91,9 +109,11 @@ export interface GameModifier {
   id: string
   name: string
   description: string
-  modifyScore?: (score: number) => number
-  modifyDice?: (diceCount: number) => number
-  onBust?: (usage: ModifierUsage) => boolean
+  symbol: string
+  modifyScore?: (score: number, context: { player: PlayerId }) => number
+  modifyDice?: (diceCount: number, context: { player: PlayerId }) => number
+  onBust?: () => 'reroll'
   onTurnStart?: () => void
-  activeAbility?: 'golden-one' | 'double-down'
+  activation?: ModifierActivation
+  useLimit?: ModifierUseLimit
 }

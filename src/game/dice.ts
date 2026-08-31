@@ -3,40 +3,40 @@ import { JOKER, type DiceValue, type DieDefinition, type DieFace, type DieInstan
 export const DIE_DEFINITIONS: DieDefinition[] = [
   {
     id: 'standard',
-    name: 'Fair Bone',
+    name: '公平骰',
     weights: [1, 1, 1, 1, 1, 1],
-    description: 'An honest die. Every face is equally likely.',
+    description: '每个点数出现的概率完全相同。',
   },
   {
     id: 'lucky-one',
-    name: "Saint's Favor",
+    name: '幸运一点',
     weights: [5, 1, 1, 1, 1, 1],
-    description: 'A subtly weighted die that favors ones.',
+    description: '经过巧妙配重，更容易掷出 1。',
   },
   {
     id: 'lucky-five',
-    name: 'Tinker’s Five',
+    name: '工匠之五',
     weights: [1, 1, 1, 1, 5, 1],
-    description: 'Frequently finds the valuable five.',
+    description: '更容易掷出可以单独计分的 5。',
   },
   {
     id: 'high-roller',
-    name: 'Highland Bone',
+    name: '高地骰',
     weights: [1, 1, 1, 2, 3, 4],
-    description: 'Leans toward high faces.',
+    description: '倾向于掷出 4、5、6 等高点数。',
   },
   {
     id: 'odd-fellow',
-    name: 'Odd Fellow',
+    name: '奇数伙伴',
     weights: [3, 1, 3, 1, 3, 1],
-    description: 'Favors odd faces: one, three, and five.',
+    description: '倾向于掷出 1、3、5 等奇数。',
   },
   {
     id: 'joker',
-    name: 'Joker Die',
+    name: 'Joker 骰',
     weights: [1, 1, 1, 1, 1, 1],
     jokerFace: 6,
-    description: 'Its skull face can complete a set or straight.',
+    description: '骷髅面可以补全同点数组合或顺子。',
   },
 ]
 

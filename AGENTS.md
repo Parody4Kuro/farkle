@@ -24,10 +24,13 @@ npm run build
   - `ai.ts`：AI 最优选骰与风险决策。
   - `modifiers.ts`：可扩展 Modifier 定义及分派函数。
   - `rules.ts`：目标分、Bank、Hot Dice 和风险提示等通用规则。
+  - `state.ts`：纯 `gameReducer` 与显式领域事件；规则状态转换应优先放在这里。
   - `types.ts`：跨模块共享的领域类型。
-- `src/hooks/useDiceGame.ts`：玩家与 AI 回合状态机、异步动画时序、本地存档。
+- `src/hooks/useDiceGame.ts`：玩家与 AI 流程编排、异步动画时序和音效触发。
+- `src/storage/gameStorage.ts`：设置、统计、音效偏好的验证、归一化和容错读写。
+- `src/audio/gameAudio.ts`：程序化 Web Audio 音效；不得依赖外部受版权保护的音频素材。
 - `src/components/`：展示和用户交互组件，不应重新实现核心规则。
-- `src/game/*.test.ts`：核心逻辑测试。
+- `src/**/*.test.ts(x)`：核心逻辑、存储、音效和关键组件测试。
 
 ## 核心规则约束
 
@@ -40,15 +43,18 @@ npm run build
 7. 新投掷完全无合法计分方式时立即 Bust，清空本回合临时分，但不得影响已经 Bank 的总分。
 8. 当前可用骰全部成功计分后触发 Hot Dice，并在同一回合重新获得完整骰组；之后 Bust 仍会丢失该回合全部临时分。
 9. Bank 必须包含当前投掷中的合法选择，不能在看过新投掷后忽略它并只保存此前临时分。
+10. 同点数组合最多使用 6 颗骰子。Loaded Hand 产生第 7 颗骰时，不得把七同作为新计分档，也不得把同一面值拆成多个同点数组合来绕过上限；单独可计分的 1 或 5 仍可另行计分。
 
 ## 实现注意事项
 
 - 核心规则保持纯函数，禁止从 `src/game/` 访问 React、DOM 或 `localStorage`。
 - 所有骰子随机结果必须通过 `weights` 加权抽样；不要直接用 `Math.random() * 6` 替代。
-- 新 Modifier 优先通过 `GameModifier` 回调或 `activeAbility` 分派接入，避免把徽章名称硬编码进计分器。
+- 新 Modifier 优先通过 `GameModifier` 回调、`activation`、`useLimit` 与通用 `ModifierUsage` 接入，避免把徽章名称硬编码进计分器或 Hook。
 - AI 必须先选择当前投掷的最佳合法拆分，再根据临时分、剩余骰数、比分、目标差距与难度判断继续或 Bank。
 - AI 和玩家投掷都包含可观察延迟。修改异步流程时必须维护 `runId` 取消保护，确保“开始新游戏”后旧定时任务不会污染新状态。
-- 设置与统计使用 `localStorage`：`tavern-bones-settings-v1` 和 `tavern-bones-stats-v1`。改变结构时要考虑旧数据容错。
+- 设置、统计和音效偏好分别使用 `localStorage`：`tavern-bones-settings-v1`、`tavern-bones-stats-v1` 和 `tavern-bones-audio-v1`。改变结构时要考虑旧数据容错。
+- 设置面板编辑的是下一局草稿；开始游戏时必须深拷贝为 `state.config`，不得让设置修改中途改变当前目标分、骰组、AI 难度或 Modifier。
+- 音效默认开启、主音量 60%，只在用户手势后初始化 `AudioContext`；页面隐藏时挂起，不支持 Web Audio 或播放失败时必须静默降级，不能影响玩法。
 - UI 应保留深色木桌、羊皮纸、铜色强调的原创风格。骰子选中、锁定、Rolling、Bust、Hot Dice 和胜利状态都需要清晰反馈。
 - 保持键盘焦点样式、按钮语义、`aria-label`/`aria-live` 和 `prefers-reduced-motion` 支持。
 - 不要引入后端或大型状态管理依赖；当前规模优先使用 React 状态、Hook 和纯函数。

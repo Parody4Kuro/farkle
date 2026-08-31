@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   color: #f1e4c5;
   background: #100c09;
   font-synthesis: none;
@@ -13,6 +13,9 @@
   --wine: #6e241f;
   --panel: #1b130e;
   --line: rgba(225, 170, 90, 0.28);
+  --font-ui: 'Avenir Next', Avenir, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Noto Serif SC', 'Songti SC', Georgia, serif;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

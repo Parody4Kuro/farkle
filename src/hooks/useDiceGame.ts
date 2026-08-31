@@ -1,66 +1,144 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createGameAudio, type GameAudio, type SoundCue } from '../audio/gameAudio'
 import { chooseAiDice, shouldAiContinue } from '../game/ai'
-import { DEFAULT_LOADOUT, rollDice } from '../game/dice'
-import { getTurnDiceCount, hasActiveAbility, shouldPreventBust } from '../game/modifiers'
-import { bankScore, createInitialState, hasWon } from '../game/rules'
+import { rollDice } from '../game/dice'
+import {
+  applyScoreModifiers,
+  canUseModifier,
+  findBustProtector,
+  getModifier,
+  getTurnDiceCount,
+} from '../game/modifiers'
+import { createInitialState } from '../game/rules'
 import { hasAnyScore, validateSelectedDice } from '../game/scoring'
-import type { GameSettings, GameState, GameStats } from '../game/types'
+import { gameReducer, type GameEvent } from '../game/state'
+import type {
+  AudioPreferences,
+  GameSettings,
+  GameState,
+  GameStats,
+  ModifierUsage,
+} from '../game/types'
+import {
+  AUDIO_KEY,
+  loadAudioPreferences,
+  loadSettings,
+  loadStats,
+  normalizeAudioPreferences,
+  normalizeSettings,
+  saveStored,
+  SETTINGS_KEY,
+  STATS_KEY,
+  getBrowserStorage,
+} from '../storage/gameStorage'
 
-const SETTINGS_KEY = 'tavern-bones-settings-v1'
-const STATS_KEY = 'tavern-bones-stats-v1'
-
-const DEFAULT_SETTINGS: GameSettings = {
-  targetScore: 4000,
-  aiDifficulty: 'normal',
-  dieLoadout: DEFAULT_LOADOUT,
-  modifierIds: [],
+const DEFAULT_DELAYS = {
+  roll: 650,
+  aiInspect: 750,
+  aiSelect: 850,
+  aiDecision: 600,
+  hotDice: 950,
+  betweenRolls: 450,
+  bust: 1400,
+  handoff: 800,
 }
 
-const DEFAULT_STATS: GameStats = {
-  wins: 0,
-  losses: 0,
-  highestTurnScore: 0,
-  longestRollStreak: 0,
+type DelayKey = keyof typeof DEFAULT_DELAYS
+
+interface StorageLike {
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
 }
 
-function loadStored<T>(key: string, fallback: T): T {
-  try {
-    const stored = localStorage.getItem(key)
-    return stored ? { ...fallback, ...JSON.parse(stored) } : fallback
-  } catch {
-    return fallback
-  }
+export interface DiceGameDependencies {
+  audio?: GameAudio
+  storage?: StorageLike
+  random?: () => number
+  idFactory?: () => string
+  delays?: Partial<Record<DelayKey, number>>
 }
 
-function delay(milliseconds: number): Promise<void> {
+function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
 
 function fullPlayerLoadout(settings: GameSettings): string[] {
-  const diceCount = getTurnDiceCount(settings.modifierIds)
+  const diceCount = getTurnDiceCount(settings.modifierIds, 6, 'human')
   return Array.from({ length: diceCount }, (_, index) => settings.dieLoadout[index] ?? 'standard')
 }
 
-export function useDiceGame() {
-  const [settings, setSettings] = useState<GameSettings>(() => loadStored(SETTINGS_KEY, DEFAULT_SETTINGS))
-  const [stats, setStats] = useState<GameStats>(() => loadStored(STATS_KEY, DEFAULT_STATS))
-  const [state, setState] = useState<GameState>(() => createInitialState(settings.targetScore))
+export function useDiceGame(dependencies: DiceGameDependencies = {}) {
+  const storage = dependencies.storage ?? getBrowserStorage()
+  const [settings, setSettings] = useState<GameSettings>(() => loadSettings(storage))
+  const [stats, setStats] = useState<GameStats>(() => loadStats(storage))
+  const [audioPreferences, setAudioPreferences] = useState<AudioPreferences>(() => loadAudioPreferences(storage))
+  const [state, setState] = useState<GameState>(() => createInitialState(settings))
   const [gameStarted, setGameStarted] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(true)
-  const [isRolling, setIsRolling] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
+  const [storageWarning, setStorageWarning] = useState(false)
+  const stateRef = useRef(state)
   const runId = useRef(0)
+  const [ownsAudio] = useState(() => !dependencies.audio)
+  const [audio] = useState<GameAudio>(() => dependencies.audio ?? createGameAudio(audioPreferences))
+
+  const delayFor = useCallback((key: DelayKey) => (
+    dependencies.delays?.[key] ?? DEFAULT_DELAYS[key]
+  ), [dependencies.delays])
+
+  const send = useCallback((event: GameEvent): GameState => {
+    const next = gameReducer(stateRef.current, event)
+    stateRef.current = next
+    setState(next)
+    return next
+  }, [])
+
+  const play = useCallback((cue: SoundCue) => {
+    audio.play(cue)
+  }, [audio])
+
+  const unlockAudio = useCallback(() => {
+    void audio.unlock()
+  }, [audio])
+
+  const makeRoll = useCallback((definitionIds: string[]) => {
+    const random = dependencies.random ?? Math.random
+    return dependencies.idFactory
+      ? rollDice(definitionIds, definitionIds.length, random, dependencies.idFactory)
+      : rollDice(definitionIds, definitionIds.length, random)
+  }, [dependencies.idFactory, dependencies.random])
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-  }, [settings])
+    if (saveStored(storage, SETTINGS_KEY, settings)) return
+    const timeout = window.setTimeout(() => setStorageWarning(true), 0)
+    return () => window.clearTimeout(timeout)
+  }, [settings, storage])
 
   useEffect(() => {
-    localStorage.setItem(STATS_KEY, JSON.stringify(stats))
-  }, [stats])
+    if (saveStored(storage, STATS_KEY, stats)) return
+    const timeout = window.setTimeout(() => setStorageWarning(true), 0)
+    return () => window.clearTimeout(timeout)
+  }, [stats, storage])
+
+  useEffect(() => {
+    if (saveStored(storage, AUDIO_KEY, audioPreferences)) return
+    const timeout = window.setTimeout(() => setStorageWarning(true), 0)
+    return () => window.clearTimeout(timeout)
+  }, [audioPreferences, storage])
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) void audio.suspend()
+      else if (audioPreferences.enabled) void audio.unlock()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [audio, audioPreferences.enabled])
 
   useEffect(() => () => {
     runId.current += 1
-  }, [])
+    if (ownsAudio) void audio.dispose()
+  }, [audio, ownsAudio])
 
   const selectedDice = useMemo(
     () => state.rolledDice.filter((die) => die.selected),
@@ -70,11 +148,12 @@ export function useDiceGame() {
     () => validateSelectedDice(selectedDice.map((die) => die.value)),
     [selectedDice],
   )
-  const selectedScore = selection.valid
-    ? selection.score * (state.doubledSelection ? 2 : 1)
+  const modifiedSelectionScore = selection.valid
+    ? applyScoreModifiers(state.config.modifierIds, selection.score, 'human')
     : selection.score
+  const selectedScore = modifiedSelectionScore * (state.doubledSelection ? 2 : 1)
 
-  const recordTurn = useCallback((turnScore: number, rollStreak: number, won: boolean) => {
+  const recordHumanTurn = useCallback((turnScore: number, rollStreak: number, won: boolean) => {
     setStats((current) => ({
       ...current,
       wins: current.wins + (won ? 1 : 0),
@@ -83,387 +162,356 @@ export function useDiceGame() {
     }))
   }, [])
 
-  const beginHumanTurn = useCallback((scores: GameState['scores'], turnNumber: number, doubleDownUsed: boolean) => {
-    const diceCount = getTurnDiceCount(settings.modifierIds)
-    setState({
-      ...createInitialState(settings.targetScore),
-      scores,
-      turnNumber,
-      diceToRoll: diceCount,
-      modifierUsage: {
-        luckyCharmUsed: false,
-        goldenOneUsed: false,
-        doubleDownUsed,
-      },
-    })
-  }, [settings.modifierIds, settings.targetScore])
+  const beginHumanTurn = useCallback((turnNumber: number) => {
+    send({ type: 'BEGIN_TURN', player: 'human', turnNumber })
+  }, [send])
 
-  const runAiTurn = useCallback(async (startingScores: GameState['scores'], turnNumber: number, doubleDownUsed: boolean, activeRun: number) => {
+  const runAiTurn = useCallback(async (
+    startingScores: GameState['scores'],
+    turnNumber: number,
+    config: GameSettings,
+    usage: ModifierUsage,
+    activeRun: number,
+  ) => {
     let scores = startingScores
     let turnScore = 0
-    let rollStreak = 0
     let definitionIds = Array<string>(6).fill('standard')
-    let lockedDice: GameState['lockedDice'] = []
 
-    setState((current) => ({
-      ...current,
-      currentPlayer: 'ai',
-      phase: 'ai_turn',
-      turnScore: 0,
-      rolledDice: [],
-      lockedDice: [],
-      diceToRoll: 6,
-      isHotDice: false,
-      message: 'The Innkeeper gathers the bones…',
-    }))
+    stateRef.current = {
+      ...stateRef.current,
+      scores,
+      config,
+      modifierUsage: usage,
+    }
+    send({ type: 'BEGIN_TURN', player: 'ai', turnNumber })
 
     while (activeRun === runId.current) {
-      setIsRolling(true)
-      setState((current) => ({ ...current, message: `The Innkeeper rolls ${definitionIds.length} dice…`, rolledDice: [] }))
-      await delay(650)
+      play('roll')
+      send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: `酒馆老板掷出 ${definitionIds.length} 颗骰子……` })
+      await wait(delayFor('roll'))
       if (activeRun !== runId.current) return
 
-      const rolled = rollDice(definitionIds, definitionIds.length)
-      rollStreak += 1
-      setIsRolling(false)
-      setState((current) => ({
-        ...current,
-        rolledDice: rolled,
-        diceToRoll: rolled.length,
-        rollStreak,
-        message: 'The Innkeeper studies the cast…',
-      }))
-      await delay(750)
+      const rolled = makeRoll(definitionIds)
+      const canScore = hasAnyScore(rolled.map((die) => die.value))
+      send({
+        type: 'ROLL_RESOLVED',
+        dice: rolled,
+        nextPhase: canScore ? 'ai_thinking' : 'bust',
+        message: canScore ? '酒馆老板正在端详这次点数……' : '对手爆骰！本回合分数全部丢失。',
+      })
+      await wait(delayFor('aiInspect'))
       if (activeRun !== runId.current) return
 
-      if (!hasAnyScore(rolled.map((die) => die.value))) {
-        setState((current) => ({
-          ...current,
-          phase: 'bust',
-          turnScore: 0,
-          message: 'BUST! The Innkeeper loses the turn score.',
-        }))
-        await delay(1250)
+      if (!canScore) {
+        play('bust')
+        send({ type: 'BUST', dice: rolled, message: '对手爆骰！本回合分数全部丢失。' })
+        await wait(delayFor('bust'))
         if (activeRun !== runId.current) return
-        beginHumanTurn(scores, turnNumber + 1, doubleDownUsed)
+        beginHumanTurn(turnNumber + 1)
         return
       }
 
       const choice = chooseAiDice(rolled.map((die) => die.value))
-      const chosen = rolled.filter((_, index) => choice.indices.includes(index)).map((die) => ({ ...die, selected: true }))
+      const chosen = rolled
+        .filter((_, index) => choice.indices.includes(index))
+        .map((die) => ({ ...die, selected: true }))
       const remaining = rolled.filter((_, index) => !choice.indices.includes(index))
       const hotDice = remaining.length === 0
 
-      setState((current) => ({
-        ...current,
-        rolledDice: rolled.map((die, index) => ({ ...die, selected: choice.indices.includes(index) })),
-        message: `The Innkeeper keeps ${chosen.length} ${chosen.length === 1 ? 'die' : 'dice'} for ${choice.score} points.`,
-      }))
-      await delay(850)
+      send({
+        type: 'SHOW_SELECTION',
+        dice: rolled.map((die, index) => ({ ...die, selected: choice.indices.includes(index) })),
+        message: `酒馆老板留下 ${chosen.length} 颗计分骰，获得 ${choice.score} 分。`,
+      })
+      await wait(delayFor('aiSelect'))
       if (activeRun !== runId.current) return
 
       turnScore += choice.score
-      lockedDice = [...lockedDice, ...chosen.map((die) => ({ ...die, selected: false }))]
       const nextCount = hotDice ? 6 : remaining.length
-      setState((current) => ({
-        ...current,
-        turnScore,
-        lockedDice,
-        rolledDice: [],
-        diceToRoll: nextCount,
-        isHotDice: hotDice,
-        message: hotDice ? 'HOT DICE! The Innkeeper earns a fresh handful.' : 'The Innkeeper weighs the risk…',
-      }))
-      await delay(hotDice ? 950 : 600)
+      send({
+        type: 'LOCK_SELECTION',
+        keptDice: chosen,
+        score: choice.score,
+        nextDiceCount: nextCount,
+        hotDice,
+        message: hotDice ? 'HOT DICE！对手获得一整把新骰子。' : '酒馆老板正在权衡风险……',
+      })
+      play(hotDice ? 'hot-dice' : 'lock')
+      await wait(delayFor(hotDice ? 'hotDice' : 'aiDecision'))
       if (activeRun !== runId.current) return
 
       const continueRolling = shouldAiContinue({
-        difficulty: settings.aiDifficulty,
+        difficulty: config.aiDifficulty,
         turnScore,
         remainingDice: nextCount,
         aiScore: scores.ai,
         humanScore: scores.human,
-        targetScore: settings.targetScore,
+        targetScore: config.targetScore,
         hotDice,
       })
 
       if (!continueRolling) {
-        scores = bankScore(scores, 'ai', turnScore)
-        const won = hasWon(scores.ai, settings.targetScore)
-        setState((current) => ({
-          ...current,
-          scores,
-          turnScore: won ? turnScore : 0,
-          rolledDice: [],
-          lockedDice: won ? lockedDice : [],
-          winner: won ? 'ai' : undefined,
-          phase: won ? 'game_over' : 'ai_turn',
-          message: won
-            ? `The Innkeeper banks ${turnScore} and wins the match.`
-            : `The Innkeeper banks ${turnScore} points.`,
-        }))
-        if (won) {
-          setStats((current) => ({
-            ...current,
-            losses: current.losses + 1,
-            longestRollStreak: Math.max(current.longestRollStreak, rollStreak),
-          }))
+        const next = send({
+          type: 'BANK',
+          player: 'ai',
+          turnTotal: turnScore,
+          message: `酒馆老板保存了 ${turnScore} 分。`,
+          winningMessage: `酒馆老板保存 ${turnScore} 分并赢下了这局。`,
+        })
+        scores = next.scores
+        play(next.winner === 'ai' ? 'defeat' : 'bank')
+        if (next.winner === 'ai') {
+          setStats((current) => ({ ...current, losses: current.losses + 1 }))
           return
         }
-        await delay(900)
+        await wait(delayFor('handoff'))
         if (activeRun !== runId.current) return
-        beginHumanTurn(scores, turnNumber + 1, doubleDownUsed)
+        beginHumanTurn(turnNumber + 1)
         return
       }
 
       definitionIds = hotDice
         ? Array<string>(6).fill('standard')
         : remaining.map((die) => die.definitionId)
-      setState((current) => ({ ...current, message: 'The Innkeeper tempts fortune again…', isHotDice: false }))
-      await delay(450)
+      send({ type: 'SET_MESSAGE', message: '酒馆老板决定继续冒险……', phase: 'ai_thinking', hotDice: false })
+      await wait(delayFor('betweenRolls'))
     }
-  }, [beginHumanTurn, settings.aiDifficulty, settings.targetScore])
+  }, [beginHumanTurn, delayFor, makeRoll, play, send])
 
-  const startAi = useCallback((scores: GameState['scores'], turnNumber: number, doubleDownUsed: boolean) => {
+  const startAi = useCallback((snapshot: GameState) => {
     const activeRun = ++runId.current
-    void runAiTurn(scores, turnNumber, doubleDownUsed, activeRun)
+    void runAiTurn(
+      snapshot.scores,
+      snapshot.turnNumber,
+      snapshot.config,
+      snapshot.modifierUsage,
+      activeRun,
+    )
   }, [runAiTurn])
 
   const handleHumanBust = useCallback(async (
     rolled: GameState['rolledDice'],
     definitionIds: string[],
     activeRun: number,
+    afterRoll: GameState,
   ) => {
-    const canReroll = shouldPreventBust(settings.modifierIds, state.modifierUsage)
-    if (canReroll) {
-      setState((current) => ({
-        ...current,
-        phase: 'bust',
-        rolledDice: rolled,
-        message: 'Lucky Charm! The bust is forgiven — the dice return to your hand.',
-        modifierUsage: { ...current.modifierUsage, luckyCharmUsed: true },
-      }))
-      await delay(1150)
+    const protector = findBustProtector(afterRoll.config.modifierIds, afterRoll.modifierUsage)
+    play('bust')
+    if (protector?.useLimit) {
+      send({ type: 'SET_MESSAGE', message: '幸运护符生效！这次爆骰被免除，骰子将重新投出。', phase: 'bust' })
+      send({ type: 'MARK_MODIFIER_USED', modifierId: protector.id, scope: protector.useLimit.scope })
+      await wait(delayFor('hotDice'))
       if (activeRun !== runId.current) return
-      setIsRolling(true)
-      setState((current) => ({ ...current, phase: 'rolling', rolledDice: [], message: 'The charm casts the bones again…' }))
-      await delay(650)
+
+      play('roll')
+      send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: '护符让骰子重新滚动……' })
+      await wait(delayFor('roll'))
       if (activeRun !== runId.current) return
-      const rerolled = rollDice(definitionIds, definitionIds.length)
-      setIsRolling(false)
-      if (!hasAnyScore(rerolled.map((die) => die.value))) {
-        setState((current) => ({
-          ...current,
-          phase: 'bust',
-          rolledDice: rerolled,
-          turnScore: 0,
-          lockedDice: [],
-          message: '爆骰！BUST — 徽章已耗尽，本回合得分丢失。',
-        }))
-        await delay(1400)
-        if (activeRun === runId.current) startAi(state.scores, state.turnNumber, state.modifierUsage.doubleDownUsed)
-        return
-      }
-      setState((current) => ({
+
+      const rerolled = makeRoll(definitionIds)
+      const canScore = hasAnyScore(rerolled.map((die) => die.value))
+      const next = send({
+        type: 'ROLL_RESOLVED',
+        dice: rerolled,
+        nextPhase: canScore ? 'selecting' : 'bust',
+        countPlayerRoll: true,
+        message: canScore ? '护符奏效了。请选择计分骰。' : '爆骰！护符已经耗尽，本回合得分丢失。',
+      })
+      if (canScore) return
+
+      play('bust')
+      const busted = send({ type: 'BUST', dice: rerolled, message: '爆骰！护符已经耗尽，本回合得分丢失。' })
+      setStats((current) => ({
         ...current,
-        phase: 'selecting',
-        rolledDice: rerolled,
-        message: 'The charm held. Choose scoring dice.',
+        longestRollStreak: Math.max(current.longestRollStreak, next.rollStreak),
       }))
+      await wait(delayFor('bust'))
+      if (activeRun === runId.current) startAi(busted)
       return
     }
 
-    setState((current) => ({
-      ...current,
-      phase: 'bust',
-      rolledDice: rolled,
-      turnScore: 0,
-      lockedDice: [],
-      message: '爆骰！BUST — 本回合得分丢失。',
-    }))
+    const busted = send({ type: 'BUST', dice: rolled, message: '爆骰！本回合得分丢失。' })
     setStats((current) => ({
       ...current,
-      longestRollStreak: Math.max(current.longestRollStreak, state.rollStreak + 1),
+      longestRollStreak: Math.max(current.longestRollStreak, afterRoll.rollStreak),
     }))
-    await delay(1400)
-    if (activeRun === runId.current) startAi(state.scores, state.turnNumber, state.modifierUsage.doubleDownUsed)
-  }, [settings.modifierIds, startAi, state.modifierUsage, state.rollStreak, state.scores, state.turnNumber])
+    await wait(delayFor('bust'))
+    if (activeRun === runId.current) startAi(busted)
+  }, [delayFor, makeRoll, play, send, startAi])
 
   const performHumanRoll = useCallback(async (definitionIds: string[]) => {
     const activeRun = ++runId.current
-    setIsRolling(true)
-    setState((current) => ({
-      ...current,
-      phase: 'rolling',
-      rolledDice: [],
-      isHotDice: false,
-      message: `Casting ${definitionIds.length} ${definitionIds.length === 1 ? 'die' : 'dice'}…`,
-    }))
-    await delay(650)
+    play('roll')
+    send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: `正在掷出 ${definitionIds.length} 颗骰子……` })
+    await wait(delayFor('roll'))
     if (activeRun !== runId.current) return
-    const rolled = rollDice(definitionIds, definitionIds.length)
-    setIsRolling(false)
-    if (!hasAnyScore(rolled.map((die) => die.value))) {
-      await handleHumanBust(rolled, definitionIds, activeRun)
-      return
-    }
-    setState((current) => ({
-      ...current,
-      phase: 'selecting',
-      rolledDice: rolled,
-      diceToRoll: rolled.length,
-      rollStreak: current.rollStreak + 1,
-      message: 'Choose any legal scoring dice, then roll again or bank.',
-    }))
-  }, [handleHumanBust])
+
+    const rolled = makeRoll(definitionIds)
+    const canScore = hasAnyScore(rolled.map((die) => die.value))
+    const afterRoll = send({
+      type: 'ROLL_RESOLVED',
+      dice: rolled,
+      nextPhase: canScore ? 'selecting' : 'bust',
+      countPlayerRoll: true,
+      message: canScore ? '请选择合法计分骰，然后继续投掷或保存分数。' : '爆骰！本回合得分丢失。',
+    })
+    if (!canScore) await handleHumanBust(rolled, definitionIds, activeRun, afterRoll)
+  }, [delayFor, handleHumanBust, makeRoll, play, send])
 
   const startGame = useCallback(() => {
     runId.current += 1
-    const initial = createInitialState(settings.targetScore)
-    initial.diceToRoll = getTurnDiceCount(settings.modifierIds)
-    setState(initial)
+    unlockAudio()
+    const next = send({ type: 'START_GAME', config: normalizeSettings(settings) })
+    stateRef.current = next
     setGameStarted(true)
     setSettingsOpen(false)
-    setIsRolling(false)
-  }, [settings.modifierIds, settings.targetScore])
+    setRulesOpen(false)
+  }, [send, settings, unlockAudio])
 
   const roll = useCallback(() => {
-    if (state.currentPlayer !== 'human' || isRolling) return
-    if (state.phase === 'ready') {
-      void performHumanRoll(fullPlayerLoadout(settings))
+    const current = stateRef.current
+    if (current.currentPlayer !== 'human' || current.phase === 'rolling') return
+    unlockAudio()
+    if (current.phase === 'ready') {
+      void performHumanRoll(fullPlayerLoadout(current.config))
       return
     }
-    if (state.phase !== 'selecting') return
+    if (current.phase !== 'selecting') return
     if (!selection.valid) {
-      setState((current) => ({
-        ...current,
+      send({
+        type: 'SET_MESSAGE',
         message: selectedDice.length
-          ? 'That selection includes a die that cannot score. Leave no dead dice selected.'
-          : 'Choose at least one scoring die before rolling again.',
-      }))
+          ? '当前选择中含有不能计分的骰子，请取消它们。'
+          : '继续投掷前，至少选择一颗合法计分骰。',
+      })
       return
     }
 
-    const remaining = state.rolledDice.filter((die) => !die.selected)
-    const kept = state.rolledDice.filter((die) => die.selected).map((die) => ({ ...die, selected: false }))
+    const remaining = current.rolledDice.filter((die) => !die.selected)
+    const kept = current.rolledDice.filter((die) => die.selected)
     const hotDice = remaining.length === 0
-    const addition = selection.score * (state.doubledSelection ? 2 : 1)
-    const nextTurnScore = state.turnScore + addition
+    const addition = selectedScore
     const nextDefinitions = hotDice
-      ? fullPlayerLoadout(settings)
+      ? fullPlayerLoadout(current.config)
       : remaining.map((die) => die.definitionId)
     const scheduledRun = ++runId.current
 
-    setState((current) => ({
-      ...current,
-      phase: 'rolling',
-      turnScore: nextTurnScore,
-      lockedDice: [...current.lockedDice, ...kept],
-      rolledDice: [],
-      diceToRoll: nextDefinitions.length,
-      isHotDice: hotDice,
-      doubledSelection: false,
-      message: hotDice ? 'HOT DICE! Every bone scored — take a fresh handful.' : `${addition} points kept. Fortune calls again…`,
-    }))
+    send({
+      type: 'LOCK_SELECTION',
+      keptDice: kept,
+      score: addition,
+      nextDiceCount: nextDefinitions.length,
+      hotDice,
+      message: hotDice ? 'HOT DICE！全部骰子都已计分，获得一整把新骰子。' : `已锁定 ${addition} 分，继续挑战运气……`,
+    })
+    play(hotDice ? 'hot-dice' : 'lock')
     window.setTimeout(() => {
       if (scheduledRun === runId.current) void performHumanRoll(nextDefinitions)
-    }, hotDice ? 950 : 450)
-  }, [isRolling, performHumanRoll, selectedDice.length, selection.score, selection.valid, settings, state])
+    }, delayFor(hotDice ? 'hotDice' : 'betweenRolls'))
+  }, [delayFor, performHumanRoll, play, selectedDice.length, selectedScore, selection.valid, send, unlockAudio])
 
   const bank = useCallback(() => {
-    if (state.currentPlayer !== 'human' || state.phase !== 'selecting' || isRolling) return
+    const current = stateRef.current
+    if (current.currentPlayer !== 'human' || current.phase !== 'selecting') return
+    unlockAudio()
     if (!selection.valid) {
-      setState((current) => ({
-        ...current,
-        message: selectedDice.length > 0
-          ? 'Remove non-scoring dice before banking.'
-          : 'Choose at least one scoring die from this cast before banking.',
-      }))
+      send({
+        type: 'SET_MESSAGE',
+        message: selectedDice.length
+          ? '保存前请取消所有不能计分的骰子。'
+          : '请先从本次投掷中选择合法计分骰。',
+      })
       return
     }
-    const addition = selection.score * (state.doubledSelection ? 2 : 1)
-    const turnTotal = state.turnScore + addition
-    if (turnTotal <= 0) {
-      setState((current) => ({ ...current, message: 'You need a scoring selection before you can bank.' }))
-      return
-    }
-    const scores = bankScore(state.scores, 'human', turnTotal)
-    const won = hasWon(scores.human, state.targetScore)
+
+    const turnTotal = current.turnScore + selectedScore
     const scheduledRun = ++runId.current
-    setState((current) => ({
-      ...current,
-      scores,
-      turnScore: won ? turnTotal : 0,
-      rolledDice: [],
-      lockedDice: won ? current.lockedDice : [],
-      phase: won ? 'game_over' : 'ai_turn',
-      winner: won ? 'human' : undefined,
-      message: won ? `You bank ${turnTotal} and win the match!` : `You bank ${turnTotal} points. The cup passes across the table.`,
-    }))
-    recordTurn(turnTotal, state.rollStreak, won)
+    const next = send({
+      type: 'BANK',
+      player: 'human',
+      turnTotal,
+      keptDice: selectedDice,
+      message: `你保存了 ${turnTotal} 分，骰盅交给对手。`,
+      winningMessage: `你保存 ${turnTotal} 分并赢下了这局！`,
+    })
+    const won = next.winner === 'human'
+    play(won ? 'victory' : 'bank')
+    recordHumanTurn(turnTotal, current.rollStreak, won)
     if (!won) {
       window.setTimeout(() => {
-        if (scheduledRun === runId.current) {
-          startAi(scores, state.turnNumber, state.modifierUsage.doubleDownUsed)
-        }
-      }, 800)
+        if (scheduledRun === runId.current) startAi(next)
+      }, delayFor('handoff'))
     }
-  }, [isRolling, recordTurn, selectedDice.length, selection.score, selection.valid, startAi, state])
+  }, [delayFor, play, recordHumanTurn, selectedDice, selectedScore, selection.valid, send, startAi, unlockAudio])
 
   const toggleDie = useCallback((id: string) => {
-    if (state.phase !== 'selecting' || state.currentPlayer !== 'human') return
-    if (state.doubledSelection) {
-      setState((current) => ({ ...current, message: 'Double Down is committed. Keep this selection by rolling again or banking.' }))
+    const current = stateRef.current
+    if (current.phase !== 'selecting' || current.currentPlayer !== 'human') return
+    unlockAudio()
+    if (current.doubledSelection) {
+      send({ type: 'SET_MESSAGE', message: '孤注一掷已经确认，请保持当前选择并继续投掷或保存。' })
       return
     }
-    setState((current) => ({
-      ...current,
-      rolledDice: current.rolledDice.map((die) => die.id === id ? { ...die, selected: !die.selected } : die),
-    }))
-  }, [state.currentPlayer, state.doubledSelection, state.phase])
+    send({ type: 'TOGGLE_DIE', dieId: id })
+    play('select')
+  }, [play, send, unlockAudio])
 
-  const useGoldenOne = useCallback(() => {
-    if (!hasActiveAbility(settings.modifierIds, 'golden-one') || state.modifierUsage.goldenOneUsed) return
-    if (selectedDice.length !== 1) {
-      setState((current) => ({ ...current, message: 'Select exactly one newly rolled die for Golden One.' }))
+  const useModifier = useCallback((modifierId: string) => {
+    const current = stateRef.current
+    const modifier = getModifier(modifierId)
+    if (
+      current.currentPlayer !== 'human'
+      || current.phase !== 'selecting'
+      || !modifier?.activation
+      || !current.config.modifierIds.includes(modifier.id)
+      || !canUseModifier(modifier, current.modifierUsage)
+    ) return
+
+    unlockAudio()
+    if (modifier.activation.ability === 'golden-one') {
+      const selected = current.rolledDice.filter((die) => die.selected)
+      if (selected.length !== 1) {
+        send({ type: 'SET_MESSAGE', message: '使用黄金一点前，请只选择一颗本次新投出的骰子。' })
+        return
+      }
+      send({
+        type: 'USE_GOLDEN_ONE',
+        modifierId,
+        scope: modifier.activation.scope,
+        dieId: selected[0].id,
+        message: '黄金一点将选中的骰子变成了 1。',
+      })
+      play('select')
       return
     }
-    const targetId = selectedDice[0].id
-    setState((current) => ({
-      ...current,
-      rolledDice: current.rolledDice.map((die) => die.id === targetId ? { ...die, value: 1 } : die),
-      modifierUsage: { ...current.modifierUsage, goldenOneUsed: true },
-      message: 'Golden One turns the chosen die to a one.',
-    }))
-  }, [selectedDice, settings.modifierIds, state.modifierUsage.goldenOneUsed])
 
-  const useDoubleDown = useCallback(() => {
-    if (!hasActiveAbility(settings.modifierIds, 'double-down') || state.modifierUsage.doubleDownUsed) return
     if (!selection.valid) {
-      setState((current) => ({ ...current, message: 'Make a valid scoring selection before using Double Down.' }))
+      send({ type: 'SET_MESSAGE', message: '使用孤注一掷前，请先完成一个合法计分选择。' })
       return
     }
-    setState((current) => ({
-      ...current,
-      doubledSelection: true,
-      modifierUsage: { ...current.modifierUsage, doubleDownUsed: true },
-      message: `Double Down! This selection is now worth ${selection.score * 2}.`,
-    }))
-  }, [selection.score, selection.valid, settings.modifierIds, state.modifierUsage.doubleDownUsed])
+    send({
+      type: 'USE_DOUBLE_DOWN',
+      modifierId,
+      scope: modifier.activation.scope,
+      message: `孤注一掷！当前选择价值 ${modifiedSelectionScore * 2} 分。`,
+    })
+    play('lock')
+  }, [modifiedSelectionScore, play, selection.valid, send, unlockAudio])
 
   const updateSettings = useCallback((updates: Partial<GameSettings>) => {
-    setSettings((current) => ({ ...current, ...updates }))
+    setSettings((current) => normalizeSettings({ ...current, ...updates }))
   }, [])
 
   const updateLoadoutDie = useCallback((index: number, definitionId: string) => {
-    setSettings((current) => ({
+    setSettings((current) => normalizeSettings({
       ...current,
       dieLoadout: current.dieLoadout.map((id, dieIndex) => dieIndex === index ? definitionId : id),
     }))
   }, [])
 
   const toggleModifier = useCallback((modifierId: string) => {
-    setSettings((current) => ({
+    if (!getModifier(modifierId)) return
+    setSettings((current) => normalizeSettings({
       ...current,
       modifierIds: current.modifierIds.includes(modifierId)
         ? current.modifierIds.filter((id) => id !== modifierId)
@@ -471,13 +519,33 @@ export function useDiceGame() {
     }))
   }, [])
 
+  const toggleAudio = useCallback(() => {
+    const next = { ...audioPreferences, enabled: !audioPreferences.enabled }
+    audio.setEnabled(next.enabled)
+    if (next.enabled) {
+      void audio.unlock().then((ready) => {
+        if (ready) audio.play('select')
+      })
+    }
+    setAudioPreferences(next)
+  }, [audio, audioPreferences])
+
+  const setAudioVolume = useCallback((volume: number) => {
+    const normalized = normalizeAudioPreferences({ enabled: audioPreferences.enabled, volume })
+    audio.setVolume(normalized.volume)
+    if (normalized.enabled) unlockAudio()
+    setAudioPreferences(normalized)
+  }, [audio, audioPreferences.enabled, unlockAudio])
+
   return {
     state,
     settings,
     stats,
+    audioPreferences,
     gameStarted,
     settingsOpen,
-    isRolling,
+    rulesOpen,
+    storageWarning,
     selection,
     selectedScore,
     actions: {
@@ -485,12 +553,15 @@ export function useDiceGame() {
       roll,
       bank,
       toggleDie,
-      useGoldenOne,
-      useDoubleDown,
+      useModifier,
       setSettingsOpen,
+      setRulesOpen,
       updateSettings,
       updateLoadoutDie,
       toggleModifier,
+      toggleAudio,
+      setAudioVolume,
+      dismissStorageWarning: () => setStorageWarning(false),
     },
   }
 }
