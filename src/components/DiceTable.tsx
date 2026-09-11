@@ -58,10 +58,11 @@ export function DiceTable({
         <div className="locked-row">
           {lockedDice.length === 0 ? (
             <span className="empty-tray">锁定的计分骰会留在这里，直到本回合结束</span>
-          ) : lockedDice.map((die) => (
+          ) : lockedDice.slice(-7).map((die) => (
             <Dice key={`locked-${die.id}`} value={die.value} locked compact disabled />
           ))}
         </div>
+        {lockedDice.length > 7 && <details className="fallback-history"><summary>查看全部 {lockedDice.length} 颗锁定骰</summary><p>{lockedDice.map((die) => die.value).join(" · ")}</p></details>}
       </div>
     </div>
   )

@@ -3,27 +3,44 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "An original offline tavern dice adventure",
+  "main": "desktop/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "playwright test",
+    "desktop:prepare": "install-electron",
+    "desktop:dev": "npm run desktop:prepare && npm run build && electron .",
+    "desktop:package": "npm run desktop:prepare && npm run build && electron-builder --mac --arm64 --dir",
+    "test:desktop": "npm run desktop:package && playwright test --config playwright.desktop.config.ts",
+    "generate:icon": "swift -module-cache-path /private/tmp/tavern-bones-swift-cache scripts/generate-icon.swift",
+    "generate:trajectories": "node --import tsx scripts/generate-trajectories.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.20.0",
+    "@react-three/fiber": "^9.7.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "three": "^0.185.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.6",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3",
     "jsdom": "^30.0.1",
     "oxlint": "^1.79.0",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"

@@ -1,5 +1,8 @@
+import { isGameHidden, onGameVisibilityChange } from '../platform/visibility'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createGameAudio, type GameAudio, type SoundCue } from '../audio/gameAudio'
+import { isPresentationEvent } from '../presentation/events'
+import type { PresentRoll } from '../presentation/rollPresentation'
 import { chooseAiDice, shouldAiContinue } from '../game/ai'
 import { rollDice } from '../game/dice'
 import {
@@ -56,6 +59,7 @@ export interface DiceGameDependencies {
   random?: () => number
   idFactory?: () => string
   delays?: Partial<Record<DelayKey, number>>
+  presentRoll?: PresentRoll
 }
 
 function wait(milliseconds: number): Promise<void> {
@@ -68,6 +72,7 @@ function fullPlayerLoadout(settings: GameSettings): string[] {
 }
 
 export function useDiceGame(dependencies: DiceGameDependencies = {}) {
+  const presentRoll = dependencies.presentRoll
   const storage = dependencies.storage ?? getBrowserStorage()
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings(storage))
   const [stats, setStats] = useState<GameStats>(() => loadStats(storage))
@@ -79,6 +84,10 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
   const [storageWarning, setStorageWarning] = useState(false)
   const stateRef = useRef(state)
   const runId = useRef(0)
+  const rollAbort = useRef<AbortController | null>(null)
+  const rollSequence = useRef(0)
+  const eventSequence = useRef(0)
+  const [presentationEvent, setPresentationEvent] = useState<{ sequence: number; event: GameEvent } | null>(null)
   const [ownsAudio] = useState(() => !dependencies.audio)
   const [audio] = useState<GameAudio>(() => dependencies.audio ?? createGameAudio(audioPreferences))
 
@@ -90,11 +99,12 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     const next = gameReducer(stateRef.current, event)
     stateRef.current = next
     setState(next)
+    if (isPresentationEvent(event)) setPresentationEvent({ sequence: ++eventSequence.current, event })
     return next
   }, [])
 
   const play = useCallback((cue: SoundCue) => {
-    audio.play(cue)
+    if (!isGameHidden()) audio.play(cue)
   }, [audio])
 
   const unlockAudio = useCallback(() => {
@@ -107,6 +117,38 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
       ? rollDice(definitionIds, definitionIds.length, random, dependencies.idFactory)
       : rollDice(definitionIds, definitionIds.length, random)
   }, [dependencies.idFactory, dependencies.random])
+
+  const animateRoll = useCallback(async (dice: GameState['rolledDice'], player: GameState['currentPlayer'], activeRun: number) => {
+    rollAbort.current?.abort()
+    const controller = new AbortController()
+    rollAbort.current = controller
+    const id = ++rollSequence.current
+    await new Promise<void>((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(timeout)
+        stopVisibility()
+        controller.signal.removeEventListener('abort', finish)
+        controller.abort()
+        resolve()
+      }
+      const visibility = () => { if (isGameHidden()) finish() }
+      const timeout = window.setTimeout(finish, 6000)
+      controller.signal.addEventListener('abort', finish, { once: true })
+      const stopVisibility = onGameVisibilityChange(visibility)
+      if (isGameHidden()) { finish(); return }
+      try {
+        const animation = presentRoll
+          ? presentRoll({ id, dice, player, onImpact: (strength) => {
+            if (!controller.signal.aborted && activeRun === runId.current && !isGameHidden()) audio.playImpact?.(strength)
+          } }, controller.signal)
+          : wait(delayFor('roll'))
+        void animation.then(finish, finish)
+      } catch { finish() }
+    })
+  }, [audio, delayFor, presentRoll])
 
   useEffect(() => {
     if (saveStored(storage, SETTINGS_KEY, settings)) return
@@ -128,15 +170,15 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
 
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.hidden) void audio.suspend()
+      if (isGameHidden()) void audio.suspend()
       else if (audioPreferences.enabled) void audio.unlock()
     }
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    return onGameVisibilityChange(onVisibilityChange)
   }, [audio, audioPreferences.enabled])
 
   useEffect(() => () => {
     runId.current += 1
+    rollAbort.current?.abort()
     if (ownsAudio) void audio.dispose()
   }, [audio, ownsAudio])
 
@@ -188,10 +230,9 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     while (activeRun === runId.current) {
       play('roll')
       send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: `酒馆老板掷出 ${definitionIds.length} 颗骰子……` })
-      await wait(delayFor('roll'))
-      if (activeRun !== runId.current) return
-
       const rolled = makeRoll(definitionIds)
+      await animateRoll(rolled, 'ai', activeRun)
+      if (activeRun !== runId.current) return
       const canScore = hasAnyScore(rolled.map((die) => die.value))
       send({
         type: 'ROLL_RESOLVED',
@@ -199,9 +240,6 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
         nextPhase: canScore ? 'ai_thinking' : 'bust',
         message: canScore ? '酒馆老板正在端详这次点数……' : '对手爆骰！本回合分数全部丢失。',
       })
-      await wait(delayFor('aiInspect'))
-      if (activeRun !== runId.current) return
-
       if (!canScore) {
         play('bust')
         send({ type: 'BUST', dice: rolled, message: '对手爆骰！本回合分数全部丢失。' })
@@ -210,6 +248,9 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
         beginHumanTurn(turnNumber + 1)
         return
       }
+
+      await wait(delayFor('aiInspect'))
+      if (activeRun !== runId.current) return
 
       const choice = chooseAiDice(rolled.map((die) => die.value))
       const chosen = rolled
@@ -276,7 +317,7 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
       send({ type: 'SET_MESSAGE', message: '酒馆老板决定继续冒险……', phase: 'ai_thinking', hotDice: false })
       await wait(delayFor('betweenRolls'))
     }
-  }, [beginHumanTurn, delayFor, makeRoll, play, send])
+  }, [animateRoll, beginHumanTurn, delayFor, makeRoll, play, send])
 
   const startAi = useCallback((snapshot: GameState) => {
     const activeRun = ++runId.current
@@ -305,10 +346,9 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
 
       play('roll')
       send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: '护符让骰子重新滚动……' })
-      await wait(delayFor('roll'))
-      if (activeRun !== runId.current) return
-
       const rerolled = makeRoll(definitionIds)
+      await animateRoll(rerolled, 'human', activeRun)
+      if (activeRun !== runId.current) return
       const canScore = hasAnyScore(rerolled.map((die) => die.value))
       const next = send({
         type: 'ROLL_RESOLVED',
@@ -337,16 +377,15 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     }))
     await wait(delayFor('bust'))
     if (activeRun === runId.current) startAi(busted)
-  }, [delayFor, makeRoll, play, send, startAi])
+  }, [animateRoll, delayFor, makeRoll, play, send, startAi])
 
   const performHumanRoll = useCallback(async (definitionIds: string[]) => {
     const activeRun = ++runId.current
     play('roll')
     send({ type: 'ROLL_STARTED', diceCount: definitionIds.length, message: `正在掷出 ${definitionIds.length} 颗骰子……` })
-    await wait(delayFor('roll'))
-    if (activeRun !== runId.current) return
-
     const rolled = makeRoll(definitionIds)
+    await animateRoll(rolled, 'human', activeRun)
+    if (activeRun !== runId.current) return
     const canScore = hasAnyScore(rolled.map((die) => die.value))
     const afterRoll = send({
       type: 'ROLL_RESOLVED',
@@ -356,10 +395,11 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
       message: canScore ? '请选择合法计分骰，然后继续投掷或保存分数。' : '爆骰！本回合得分丢失。',
     })
     if (!canScore) await handleHumanBust(rolled, definitionIds, activeRun, afterRoll)
-  }, [delayFor, handleHumanBust, makeRoll, play, send])
+  }, [animateRoll, handleHumanBust, makeRoll, play, send])
 
   const startGame = useCallback(() => {
     runId.current += 1
+    rollAbort.current?.abort()
     unlockAudio()
     const next = send({ type: 'START_GAME', config: normalizeSettings(settings) })
     stateRef.current = next
@@ -539,6 +579,7 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
 
   return {
     state,
+    presentationEvent,
     settings,
     stats,
     audioPreferences,

@@ -39,6 +39,28 @@ function createFakeContext(): AudioContext {
 }
 
 describe('WebGameAudio', () => {
+  it('starts ambience only after unlock and stops scheduling when muted or disposed', async () => {
+    vi.useFakeTimers()
+    try {
+      const context = createFakeContext()
+      const factory = vi.fn(() => context)
+      const tones = vi.spyOn(context, 'createOscillator')
+      const audio = new WebGameAudio({ enabled: true, volume: 0.6 }, factory)
+      audio.setAmbience(0.3, 0.2, 3)
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(factory).not.toHaveBeenCalled()
+      await audio.unlock()
+      await vi.advanceTimersByTimeAsync(900)
+      expect(tones).toHaveBeenCalled()
+      audio.setEnabled(false)
+      const count = tones.mock.calls.length
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(tones.mock.calls.length).toBe(count)
+      await audio.dispose()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally { vi.useRealTimers() }
+  })
+
   it('is lazy and silent while disabled', async () => {
     const factory = vi.fn(() => createFakeContext())
     const audio = new WebGameAudio({ enabled: false, volume: 0.6 }, factory)

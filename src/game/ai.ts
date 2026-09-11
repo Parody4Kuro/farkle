@@ -9,6 +9,7 @@ export interface AiDecisionContext {
   humanScore: number
   targetScore: number
   hotDice: boolean
+  bustProbability?: number
 }
 
 const BASE_BANK_THRESHOLD: Record<AiDifficulty, number> = {
@@ -46,6 +47,8 @@ export function shouldAiContinue(context: AiDecisionContext): boolean {
   if (targetGap <= 900) threshold = Math.min(threshold, targetGap)
   if (hotDice) threshold += difficulty === 'aggressive' ? 500 : 250
 
-  const dangerPenalty = remainingDice <= 1 ? 450 : remainingDice === 2 ? 250 : remainingDice === 3 ? 100 : 0
+  const dangerPenalty = context.bustProbability === undefined
+    ? remainingDice <= 1 ? 450 : remainingDice === 2 ? 250 : remainingDice === 3 ? 100 : 0
+    : Math.round(Math.max(0, Math.min(1, context.bustProbability)) * 650)
   return turnScore < Math.max(150, threshold - dangerPenalty)
 }
