@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { applyScoreModifiers, findBustProtector } from '../game/modifiers'
+import { findBustProtector } from '../game/modifiers'
 import { bustProbability, nextHumanLoadout } from '../game/risk'
-import { validateSelectedDice } from '../game/scoring'
+import { evaluateSelection } from '../game/selection'
 import type { GameState, ScoreGroup } from '../game/types'
 
 function groupLabel(group: ScoreGroup): string {
@@ -11,22 +11,24 @@ function groupLabel(group: ScoreGroup): string {
 }
 
 export function ScoreExplanation({ state }: { state: GameState }) {
-  const selected = useMemo(() => state.rolledDice.filter((die) => die.selected), [state.rolledDice])
-  const choice = useMemo(() => validateSelectedDice(selected.map((d) => d.value)), [selected])
+  const choice = useMemo(() => evaluateSelection(state), [state])
+  const selected = choice.selectedDice
   const ids = useMemo(() => nextHumanLoadout(state), [state])
   const risk = useMemo(() => bustProbability(ids), [ids])
   const human = state.currentPlayer === 'human'
   const canSee = human && (state.phase === 'selecting' || state.phase === 'ready')
-  const bonus = applyScoreModifiers(state.config.modifierIds, choice.score, state.currentPlayer) * (state.doubledSelection ? 2 : 1) - choice.score
   const protector = findBustProtector(state.config.modifierIds, state.modifierUsage)
   return <div className="decision-ledger">
     <div className="score-explanation" aria-label="计分明细">
       <span className="ledger-label">这一手的账</span>
       {selected.length === 0 ? <p className="ledger-hint">{human ? '选中骰子后，在这里查看组合与得分。' : '观察对手的选择，下一回合就轮到你。'}</p>
-        : <><div className="score-groups">{choice.groups.map((group, i) => <span key={i}>{groupLabel(group)} <b>+{group.score}</b>{group.jokerAs?.length ? <small> 骷髅 → {group.jokerAs.join('、')}</small> : null}</span>)}
-          {choice.valid && bonus !== 0 && <span>徽章加成 <b>+{bonus}</b></span>}</div>
+        : <><div className="score-groups">{choice.groups.map((group, i) => <span key={i}>{groupLabel(group)} <b>+{group.score}</b>
+          {group.adjustments?.map((adjustment) => <small key={adjustment.modifierId}>{adjustment.label}：基础 {group.baseScore} {adjustment.amount > 0 ? '+' : '−'} {Math.abs(adjustment.amount)}</small>)}
+          {group.jokerAs?.length ? <small> 骷髅 → {group.jokerAs.join('、')}</small> : null}</span>)}
+          {choice.valid && choice.totalAdjustment !== 0 && <span>徽章调整 <b>{choice.totalAdjustment > 0 ? '+' : '−'}{Math.abs(choice.totalAdjustment)}</b></span>}
+          {choice.valid && choice.doubleBonus > 0 && <span>孤注一掷 <b>+{choice.doubleBonus}</b></span>}</div>
           {!choice.valid && <p className="selection-error">选择尚未完整计分：请调整 {choice.unusedDice.map((v) => v === 'JOKER' ? '骷髅' : v).join('、')}。</p>}
-          {choice.valid && human && <p className="bank-total">本回合 {state.turnScore} + 本次 {choice.score + bonus} <span>可落袋 <b>{state.turnScore + choice.score + bonus}</b></span></p>}</>}
+          {choice.valid && human && <p className="bank-total">本回合 {state.turnScore} + 本次 {choice.score} <span>可落袋 <b>{choice.bankTotal}</b></span></p>}</>}
     </div>
     <div className="exact-risk" aria-label="下一投风险">
       <span className="ledger-label">下一投 · {canSee ? `${ids.length} 颗骰子` : '等待选择'}</span>

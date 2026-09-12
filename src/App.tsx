@@ -15,16 +15,19 @@ import { getActiveModifiers } from './game/modifiers'
 import { useDiceGame } from './hooks/useDiceGame'
 import { createAdventure, type AdventureRun } from './game/adventure'
 import { bustProbability, nextHumanLoadout } from './game/risk'
-import { ADVENTURE_KEY, COMFORT_KEY, PROFILE_KEY, loadAdventure, loadComfort, loadProfile, recordAdventure, type ComfortPreferences } from './storage/adventureStorage'
+import { readAdventure, saveAdventure, COMFORT_KEY, PROFILE_KEY, loadAdventure, loadComfort, loadProfile, recordAdventure, type ComfortPreferences } from './storage/adventureStorage'
 import { getBrowserStorage, saveStored } from './storage/gameStorage'
 import { AdventureGame } from './components/AdventureGame'
 import { TavernLobby } from './components/TavernLobby'
 import { ScoreExplanation } from './components/ScoreExplanation'
+import { abilityReasons } from './game/selection'
+import { PauseDialog } from './components/PauseDialog'
 
 function ClassicGame({ onHome }: { onHome: () => void }) {
   const [presentation] = useState(() => new RollPresentation())
   const {
     state,
+    playback, paused, canResume, pause, resume,
     presentationEvent,
     settings,
     stats,
@@ -36,7 +39,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
     selection,
     selectedScore,
     actions,
-  } = useDiceGame({ presentRoll: presentation.present })
+  } = useDiceGame({ presentRoll: presentation.present, playback: presentation.playback })
   const humanTurn = state.currentPlayer === 'human'
   const hasSelection = state.rolledDice.some((die) => die.selected)
   const diceRemaining = state.rolledDice.length > 0
@@ -58,7 +61,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
   }
 
   return (
-    <main className={`game-shell classic-game phase-${state.phase} ${state.isHotDice ? 'hot-dice-active' : ''}`}>
+    <main className={`game-shell classic-game phase-${state.phase} ${state.isHotDice ? 'hot-dice-active' : ''} ${paused ? 'game-paused' : ''}`} data-paused={paused}>
       <header className="topbar">
         <div className="brand-mark" aria-hidden="true"><span>✦</span></div>
         <div className="brand-copy">
@@ -66,6 +69,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
           <h1>Tavern Bones</h1>
         </div>
         <div className="header-actions">
+          {gameStarted && state.phase !== 'game_over' && <button className="icon-button" aria-label="暂停对局" onClick={pause}>Ⅱ</button>}
           <button className="icon-button" type="button" aria-label="返回酒馆" onClick={onHome}>⌂</button>
           <button
             className="icon-button"
@@ -107,7 +111,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
         </div>
 
         <TableStage state={state} presentation={presentation} selectionValid={selection.valid} onToggleDie={actions.toggleDie} />
-        <ComicEffects event={presentationEvent} />
+        <ComicEffects event={presentationEvent} playback={playback} />
         <div className="table-caption">
           <span className="caption-ornament" aria-hidden="true">✦</span>
           <span className={hasSelection && !selection.valid ? 'caption-invalid' : ''}>
@@ -142,6 +146,8 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
             canBank={selection.valid}
             abilities={abilities}
             modifierUsage={state.modifierUsage}
+            abilityDisabledReasons={abilityReasons(state)}
+            paused={paused}
             onRoll={actions.roll}
             onBank={actions.bank}
             onUseModifier={actions.useModifier}
@@ -156,6 +162,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
       </footer>
       <details className="classic-ledger"><summary>查看计分明细与下一投风险</summary><ScoreExplanation state={state} /></details>
 
+      {gameStarted && state.phase !== 'game_over' && paused && !settingsOpen && !rulesOpen && <PauseDialog canResume={canResume} onResume={resume} onHome={onHome} />}
       {settingsOpen && (
         <SettingsModal
           settings={settings}
@@ -188,13 +195,11 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
 
 function App() {
   const [mode, setMode] = useState<'lobby' | 'classic' | 'adventure'>('lobby')
-  const [saved, setSaved] = useState(loadAdventure)
+  const [restored] = useState(readAdventure)
+  const [saved, setSaved] = useState(restored.run)
   const [profile, setProfile] = useState(() => saved ? recordAdventure(loadProfile(), saved) : loadProfile())
   const [comfort, setComfort] = useState(loadComfort)
-  const [warning, setWarning] = useState(() => {
-    try { return getBrowserStorage()?.getItem(ADVENTURE_KEY) && !loadAdventure() ? '冒险存档无法读取；可开始新的一夜或进入经典对局。' : '' }
-    catch { return '本机存储暂不可用。' }
-  })
+  const [warning, setWarning] = useState(restored.warning)
   const updateComfort = (next: ComfortPreferences) => {
     setComfort(next)
     if (!saveStored(getBrowserStorage(), COMFORT_KEY, next)) setWarning('无法保存偏好；当前设置仍然生效。')
@@ -207,18 +212,18 @@ function App() {
     const timer = window.setTimeout(() => setWarning('本次收藏未能保存，请保持页面开启。'), 0)
     return () => window.clearTimeout(timer)
   }, [profile])
-  const home = () => {
-    const run = loadAdventure()
+  const home = (inMemory?: AdventureRun) => {
+    const run = inMemory ?? loadAdventure()
     setSaved(run)
     if (run) setProfile((current) => recordAdventure(current, run))
     setMode('lobby')
   }
-  if (mode === 'classic') return <ClassicGame onHome={home} />
+  if (mode === 'classic') return <ClassicGame onHome={() => home()} />
   if (mode === 'adventure' && saved) return <AdventureGame key={saved.id} initial={saved} comfort={comfort} onComfort={updateComfort} onHome={home} onFinished={finish} appearanceUnlocked={profile.wins > 0} profileWarning={warning} />
   return <TavernLobby saved={saved} profile={profile} comfort={comfort} warning={warning} onComfort={updateComfort} onClassic={() => setMode('classic')}
     onContinue={() => setMode('adventure')} onStart={(origin) => {
       const run = createAdventure(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), origin)
-      if (!saveStored(getBrowserStorage(), ADVENTURE_KEY, run)) setWarning('无法保存这次冒险；当前仍可继续。')
+      if (!saveAdventure(run)) setWarning('无法保存这次冒险；当前仍可继续。')
       else setWarning('')
       setSaved(run); setMode('adventure')
     }} />

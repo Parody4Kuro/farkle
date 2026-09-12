@@ -36,6 +36,14 @@ export interface ScoreGroup {
   dieIndices: number[]
   label: string
   jokerAs?: DieFace[]
+  baseScore?: number
+  adjustments?: Array<{ modifierId: string; label: string; amount: number }>
+}
+
+export interface ScoringContext {
+  modifierIds: readonly string[]
+  player?: PlayerId
+  version?: number
 }
 
 export interface ScoreResult {
@@ -54,6 +62,7 @@ export interface GameSettings {
   aiDifficulty: AiDifficulty
   dieLoadout: string[]
   modifierIds: string[]
+  scoringVersion?: number
 }
 
 export interface GameStats {
@@ -110,6 +119,12 @@ export interface GameModifier {
   name: string
   description: string
   symbol: string
+  category?: 'core'
+  adventureOnly?: boolean
+  benefit?: string
+  cost?: string
+  example?: string
+  modifyGroup?: (group: ScoreGroup, context: { player: PlayerId; version: number }) => number
   modifyScore?: (score: number, context: { player: PlayerId }) => number
   modifyDice?: (diceCount: number, context: { player: PlayerId }) => number
   onBust?: () => 'reroll'

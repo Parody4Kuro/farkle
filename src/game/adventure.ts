@@ -1,19 +1,26 @@
 import { rollDice } from './dice'
 import { chooseAiDice, shouldAiContinue } from './ai'
-import { applyScoreModifiers, canUseModifier, findBustProtector, getModifier, MODIFIERS } from './modifiers'
+import { findBustProtector, MODIFIERS } from './modifiers'
 import { opponentAt } from './opponents'
 import { createInitialState } from './rules'
 import { hasAnyScore, validateSelectedDice } from './scoring'
 import { gameReducer, type GameEvent } from './state'
 import { bustProbability, nextHumanLoadout } from './risk'
 import type { DieInstance, GameState, PlayerId } from './types'
+import { abilityEvent, evaluateSelection, modifierDisabledReason } from './selection'
+import { CORE_MODIFIERS, SCORING_VERSION } from './cores'
+import { addInventoryItem, createInventory, loadoutError, type Inventory } from './inventory'
 
-export type RunStage = 'seat' | 'playing' | 'reward' | 'won' | 'lost'
+export type RunStage = 'core' | 'seat' | 'playing' | 'reward' | 'won' | 'lost'
 export type DuelFlow = 'ready' | 'rolling' | 'selecting' | 'inspect' | 'decide' | 'handoff' | 'bust' | 'charm' | 'done'
 export interface Reward { id: string; kind: 'die' | 'modifier'; definitionId: string }
-export interface TableResult { table: number; winner: PlayerId; humanScore: number; aiScore: number; peak: number }
+export interface TableResult { table: number; attempt: number; winner: PlayerId; humanScore: number; aiScore: number; peak: number }
 export interface AdventureRun {
-  version: 1
+  version: 2
+  scoringVersion: typeof SCORING_VERSION
+  inventory: Inventory
+  opening: { offers: string[]; selected: string | null; source: 'new' | 'migrated' }
+  rewardOfferId: string | null
   id: string
   revision: number
   rng: number
@@ -49,27 +56,30 @@ export function randomStep(seed: number): { seed: number; value: number } {
 
 function gameFor(run: Pick<AdventureRun, 'loadout' | 'modifiers' | 'table'>): GameState {
   return createInitialState({ targetScore: run.table === 3 ? 4000 : 2000, aiDifficulty: opponentAt(run.table).difficulty,
-    dieLoadout: [...run.loadout], modifierIds: [...run.modifiers] })
+    dieLoadout: [...run.loadout], modifierIds: [...run.modifiers], scoringVersion: SCORING_VERSION })
 }
 
 export function createAdventure(seed: number, id: string, origin = 'traveller'): AdventureRun {
   const loadout = [...(ORIGINS.find((o) => o.id === origin) ?? ORIGINS[0]).loadout]
-  return { version: 1, id, revision: 0, rng: seed >>> 0 || 1, rewardRng: (seed ^ 0xa53c917b) >>> 0 || 1,
-    table: 0, losses: 0, stage: 'seat', flow: 'ready', loadout, modifiers: [],
+  return { version: 2, scoringVersion: SCORING_VERSION, inventory: createInventory(loadout),
+    opening: { offers: CORE_MODIFIERS.map((m) => m.id), selected: null, source: 'new' }, rewardOfferId: null,
+    id, revision: 0, rng: seed >>> 0 || 1, rewardRng: (seed ^ 0xa53c917b) >>> 0 || 1,
+    table: 0, losses: 0, stage: 'core', flow: 'ready', loadout, modifiers: [],
     game: gameFor({ loadout, modifiers: [], table: 0 }), pendingDice: [], remainingLoadout: [], rewards: [],
     history: [], peak: 0, largestBust: 0 }
 }
 
 export type AdventureAction =
-  | { type: 'SIT' }
+  | { type: 'SELECT_CORE'; id: string }
+  | { type: 'SIT'; loadout?: string[]; modifiers?: string[] }
   | { type: 'ROLL' }
   | { type: 'ROLL_FINISHED' }
   | { type: 'TICK' }
   | { type: 'TOGGLE'; id: string }
   | { type: 'ABILITY'; id: string }
   | { type: 'BANK' }
-  | { type: 'REWARD'; id: string; slot?: number }
-  | { type: 'SKIP_REWARD' }
+  | { type: 'REWARD'; id: string; offerId: string }
+  | { type: 'SKIP_REWARD'; offerId: string }
 
 function apply(run: AdventureRun, event: GameEvent): AdventureRun {
   return { ...run, game: gameReducer(run.game, event), lastEvent: event }
@@ -90,25 +100,25 @@ function offerRewards(run: AdventureRun): AdventureRun {
   let seed = run.rewardRng
   const pool: Reward[] = [
     ...['lucky-one', 'lucky-five', 'high-roller', 'odd-fellow', 'joker'].map((id) => ({ id: `die:${id}`, kind: 'die' as const, definitionId: id })),
-    ...MODIFIERS.filter((m) => !run.modifiers.includes(m.id)).map((m) => ({ id: `modifier:${m.id}`, kind: 'modifier' as const, definitionId: m.id })),
+    ...MODIFIERS.filter((m) => !run.inventory.modifiers.includes(m.id)).map((m) => ({ id: `modifier:${m.id}`, kind: 'modifier' as const, definitionId: m.id })),
   ]
   const rewards: Reward[] = []
   for (let i = 0; i < 3; i++) {
     const next = randomStep(seed); seed = next.seed
     rewards.push(pool.splice(Math.floor(next.value * pool.length), 1)[0])
   }
-  return { ...run, rewards, rewardRng: seed }
+  return { ...run, rewards, rewardRng: seed, rewardOfferId: `${run.id}:${run.table}:${run.history.length}` }
 }
 
 function finishTable(run: AdventureRun): AdventureRun {
   const winner = run.game.winner!
   const losses = run.losses + Number(winner === 'ai')
-  const history = [...run.history, { table: run.table, winner, humanScore: run.game.scores.human,
+  const history = [...run.history, { table: run.table, attempt: run.history.filter((h) => h.table === run.table).length + 1, winner, humanScore: run.game.scores.human,
     aiScore: run.game.scores.ai, peak: run.peak }]
   const next: AdventureRun = { ...run, losses, history, flow: 'done', pendingDice: [] }
   if (losses >= 2) return { ...next, stage: 'lost' }
   if (run.table === 3) return { ...next, stage: winner === 'human' ? 'won' : 'seat' }
-  if (winner === 'ai') return { ...next, stage: 'seat', table: run.table + 1 }
+  if (winner === 'ai') return { ...next, stage: 'seat' }
   return offerRewards({ ...next, stage: 'reward' })
 }
 
@@ -129,27 +139,25 @@ function handoff(run: AdventureRun): AdventureRun {
 }
 
 function transition(run: AdventureRun, action: AdventureAction): AdventureRun {
+  if (run.stage === 'core') {
+    if (action.type !== 'SELECT_CORE' || !run.opening.offers.includes(action.id) || run.opening.selected) return run
+    return { ...run, stage: 'seat', inventory: addInventoryItem(run.inventory, 'modifier', action.id),
+      modifiers: [action.id], opening: { ...run.opening, selected: action.id } }
+  }
   if (action.type === 'SIT' && run.stage === 'seat') {
-    return { ...run, stage: 'playing', flow: 'ready', game: gameFor(run), pendingDice: [], remainingLoadout: [], rewards: [] }
+    const loadout = [...(action.loadout ?? run.loadout)], modifiers = [...(action.modifiers ?? run.modifiers)]
+    if (loadoutError(run.inventory, loadout, modifiers)) return run
+    return { ...run, loadout, modifiers, stage: 'playing', flow: 'ready', game: gameFor({ ...run, loadout, modifiers }),
+      pendingDice: [], remainingLoadout: [], rewards: [], rewardOfferId: null }
   }
   if (run.stage === 'reward') {
-    if (action.type === 'SKIP_REWARD') return { ...run, stage: 'seat', table: run.table + 1, rewards: [] }
-    if (action.type !== 'REWARD') return run
+    if ((action.type !== 'REWARD' && action.type !== 'SKIP_REWARD') || action.offerId !== run.rewardOfferId) return run
+    if (action.type === 'SKIP_REWARD') return { ...run, stage: 'seat', table: run.table + 1, rewards: [], rewardOfferId: null }
     const reward = run.rewards.find((r) => r.id === action.id)
     if (!reward) return run
-    const loadout = [...run.loadout], modifiers = [...run.modifiers]
-    if (reward.kind === 'die') {
-      if (!Number.isInteger(action.slot) || action.slot! < 0 || action.slot! > 5) return run
-      loadout[action.slot!] = reward.definitionId
-    } else {
-      if (modifiers.includes(reward.definitionId)) return run
-      if (modifiers.length < 2) modifiers.push(reward.definitionId)
-      else {
-        if (action.slot !== 0 && action.slot !== 1) return run
-        modifiers[action.slot] = reward.definitionId
-      }
-    }
-    return { ...run, loadout, modifiers, stage: 'seat', table: run.table + 1, rewards: [] }
+    const inventory = addInventoryItem(run.inventory, reward.kind, reward.definitionId)
+    if (inventory === run.inventory) return run
+    return { ...run, inventory, stage: 'seat', table: run.table + 1, rewards: [], rewardOfferId: null }
   }
   if (run.stage !== 'playing') return run
   const game = run.game
@@ -199,20 +207,12 @@ function transition(run: AdventureRun, action: AdventureAction): AdventureRun {
   if (action.type === 'ROLL' && run.flow === 'ready') return draw(run, nextHumanLoadout(game))
   if (run.flow !== 'selecting') return run
   if (action.type === 'TOGGLE') return apply(run, { type: 'TOGGLE_DIE', dieId: action.id })
-  const kept = game.rolledDice.filter((d) => d.selected)
-  const choice = validateSelectedDice(kept.map((d) => d.value))
-  const score = applyScoreModifiers(game.config.modifierIds, choice.score, 'human') * (game.doubledSelection ? 2 : 1)
+  const choice = evaluateSelection(game)
+  const kept = choice.selectedDice
+  const score = choice.score
   if (action.type === 'ABILITY') {
-    const modifier = getModifier(action.id)
-    if (!modifier?.activation || !game.config.modifierIds.includes(action.id) || !canUseModifier(modifier, game.modifierUsage)) return run
-    if (game.doubledSelection) return run
-    if (modifier.activation.ability === 'golden-one' && kept.length === 1) {
-      return apply(run, { type: 'USE_GOLDEN_ONE', modifierId: action.id, scope: modifier.activation.scope, dieId: kept[0].id, message: '黄金一点：这颗骰子变成了 1。' })
-    }
-    if (modifier.activation.ability === 'double-down' && choice.valid) {
-      return apply(run, { type: 'USE_DOUBLE_DOWN', modifierId: action.id, scope: modifier.activation.scope, message: '孤注一掷：当前选择翻倍，选择已固定。' })
-    }
-    return { ...run, game: { ...game, message: '黄金一点需要只选一颗骰子；孤注一掷需要合法选择。' } }
+    const event = abilityEvent(game, action.id)
+    return event ? apply(run, event) : apply(run, { type: 'SET_MESSAGE', message: modifierDisabledReason(game, action.id) ?? game.message })
   }
   if (!choice.valid) return run
   if (action.type === 'BANK') return bank(run, score, kept)

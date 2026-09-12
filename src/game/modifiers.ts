@@ -1,9 +1,12 @@
+import { CORE_MODIFIERS, SCORING_VERSION } from './cores'
 import type {
   GameModifier,
   ModifierAbility,
   ModifierUsage,
   ModifierUseScope,
   PlayerId,
+  ScoreGroup,
+  ScoringContext,
 } from './types'
 
 export const MODIFIERS: GameModifier[] = [
@@ -36,13 +39,14 @@ export const MODIFIERS: GameModifier[] = [
     symbol: 'Ⅱ',
     activation: { ability: 'double-down', scope: 'game', maxUses: 1 },
   },
+  ...CORE_MODIFIERS,
 ]
 
 export function getModifier(id: string): GameModifier | undefined {
   return MODIFIERS.find((modifier) => modifier.id === id)
 }
 
-export function getModifiers(ids: string[]): GameModifier[] {
+export function getModifiers(ids: readonly string[]): GameModifier[] {
   return ids.map(getModifier).filter((modifier): modifier is GameModifier => Boolean(modifier))
 }
 
@@ -102,9 +106,21 @@ export function getTurnDiceCount(ids: string[], baseDiceCount = 6, player: Playe
   )
 }
 
-export function applyScoreModifiers(ids: string[], score: number, player: PlayerId): number {
+export function applyScoreModifiers(ids: readonly string[], score: number, player: PlayerId): number {
   return getModifiers(ids).reduce(
     (currentScore, modifier) => modifier.modifyScore?.(currentScore, { player }) ?? currentScore,
     score,
   )
+}
+
+export function applyGroupModifiers(group: ScoreGroup, context?: ScoringContext): ScoreGroup {
+  if (!context) return group
+  return getModifiers(context.modifierIds).reduce((current, modifier) => {
+    if (!modifier.modifyGroup) return current
+    const score = modifier.modifyGroup(current, { player: context.player ?? 'human', version: context.version ?? SCORING_VERSION })
+    if (!Number.isSafeInteger(score) || score <= 0) throw new RangeError('Scoring modifiers must preserve positive integer groups')
+    if (score === current.score) return current
+    return { ...current, score, baseScore: current.baseScore ?? current.score,
+      adjustments: [...(current.adjustments ?? []), { modifierId: modifier.id, label: modifier.name, amount: score - current.score }] }
+  }, group)
 }

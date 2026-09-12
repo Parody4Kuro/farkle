@@ -1,5 +1,6 @@
-import { getTurnDiceCount, markModifierUsed, resetTurnModifierUsage } from './modifiers'
+import { getModifier, getTurnDiceCount, markModifierUsed, resetTurnModifierUsage } from './modifiers'
 import { bankScore, cloneGameSettings, createInitialState, hasWon } from './rules'
+import { modifierDisabledReason } from './selection'
 import type {
   DieInstance,
   GamePhase,
@@ -85,6 +86,10 @@ export function gameReducer(state: GameState, event: GameEvent): GameState {
       }
 
     case 'USE_GOLDEN_ONE':
+      if (modifierDisabledReason(state, event.modifierId)
+        || getModifier(event.modifierId)?.activation?.ability !== 'golden-one'
+        || getModifier(event.modifierId)?.activation?.scope !== event.scope
+        || !state.rolledDice.some((die) => die.id === event.dieId && die.selected)) return state
       return {
         ...state,
         rolledDice: state.rolledDice.map((die) => die.id === event.dieId ? { ...die, value: 1 } : die),
@@ -93,6 +98,8 @@ export function gameReducer(state: GameState, event: GameEvent): GameState {
       }
 
     case 'USE_DOUBLE_DOWN':
+      if (modifierDisabledReason(state, event.modifierId) || getModifier(event.modifierId)?.activation?.ability !== 'double-down'
+        || getModifier(event.modifierId)?.activation?.scope !== event.scope) return state
       return {
         ...state,
         doubledSelection: true,

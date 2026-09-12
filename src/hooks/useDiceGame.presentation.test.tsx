@@ -5,7 +5,7 @@ import type { GameAudio } from '../audio/gameAudio'
 import type { PresentRoll, RollRequest } from '../presentation/rollPresentation'
 import { useDiceGame } from './useDiceGame'
 
-beforeEach(() => vi.useFakeTimers())
+beforeEach(() => { vi.useFakeTimers(); vi.spyOn(document, 'hasFocus').mockReturnValue(true) })
 afterEach(() => { delete window.tavernDesktop; vi.useRealTimers(); vi.restoreAllMocks() })
 
 function setup(random = vi.fn(() => 0), override?: PresentRoll) {
@@ -95,13 +95,27 @@ describe('physics presentation integration', () => {
     unmount()
   })
 
-  it('finishes the pending roll when the page is hidden', async () => {
-    const { result, rolls, unmount } = setup()
+  it('freezes the pending roll and timeout until manual resume, even if the presenter finishes while hidden', async () => {
+    const { result, rolls, random, unmount } = setup()
     act(() => result.current.actions.roll())
-    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
-    await act(async () => document.dispatchEvent(new Event('visibilitychange')))
+    await act(async () => vi.advanceTimersByTimeAsync(1500))
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    const snapshot = result.current.state
+    await act(async () => { rolls[0].resolve(); await vi.advanceTimersByTimeAsync(20000) })
+    expect(result.current.paused).toBe(true)
+    expect(result.current.state).toBe(snapshot)
+    expect(rolls[0].signal.aborted).toBe(false)
+    act(() => result.current.resume())
+    expect(result.current.paused).toBe(true)
+    hidden.mockReturnValue(false)
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(result.current.paused).toBe(true)
+    expect(result.current.state.phase).toBe('rolling')
+    await act(async () => result.current.resume())
     expect(result.current.state.phase).toBe('selecting')
-    expect(rolls[0].signal.aborted).toBe(true)
+    expect(result.current.state.rolledDice).toEqual(rolls[0].request.dice)
+    expect(random).toHaveBeenCalledTimes(6)
     unmount()
   })
 
@@ -120,7 +134,7 @@ describe('physics presentation integration', () => {
     unmount()
   })
 
-  it('keeps background AI cues silent after native minimization', async () => {
+  it('freezes AI handoff and cues after native minimization until manual resume', async () => {
     let visible = true
     const listeners = new Set<() => void>()
     window.tavernDesktop = {
@@ -139,8 +153,15 @@ describe('physics presentation integration', () => {
       await vi.advanceTimersByTimeAsync(150)
     })
     expect(audio.suspend).toHaveBeenCalledOnce()
-    expect(result.current.state.winner).toBe('ai')
-    expect(audio.play).not.toHaveBeenCalled()
+    expect(result.current.state.winner).toBeUndefined()
+    expect(rolls).toHaveLength(1)
+    act(() => { visible = true; for (const listener of listeners) listener() })
+    await act(async () => vi.advanceTimersByTimeAsync(100))
+    expect(rolls).toHaveLength(1)
+    act(() => result.current.resume())
+    await act(async () => vi.advanceTimersByTimeAsync(20))
+    expect(rolls).toHaveLength(2)
+    expect(audio.play).toHaveBeenCalledWith('roll')
     unmount()
     expect(listeners.size).toBe(0)
   })
@@ -160,6 +181,57 @@ describe('physics presentation integration', () => {
     expect(random).toHaveBeenCalledTimes(12)
     expect(result.current.state.phase).toBe('selecting')
     expect(result.current.state.modifierUsage.turn['lucky-charm']).toBe(1)
+    unmount()
+  })
+
+  it('preserves Hot Dice delay and cancels a paused future roll when starting a new game', async () => {
+    const { result, rolls, random, unmount } = setup()
+    act(() => result.current.actions.roll())
+    await act(async () => rolls[0].resolve())
+    for (const die of result.current.state.rolledDice) act(() => result.current.actions.toggleDie(die.id))
+    act(() => result.current.actions.roll())
+    expect(result.current.state.isHotDice).toBe(true)
+    const pot = result.current.state.turnScore
+    await act(async () => vi.advanceTimersByTimeAsync(5))
+    act(() => result.current.pause())
+    await act(async () => vi.advanceTimersByTimeAsync(30000))
+    expect(result.current.state.turnScore).toBe(pot)
+    expect(random).toHaveBeenCalledTimes(6)
+    act(() => result.current.resume())
+    await act(async () => vi.advanceTimersByTimeAsync(14))
+    expect(rolls).toHaveLength(1)
+    await act(async () => vi.advanceTimersByTimeAsync(1))
+    expect(rolls).toHaveLength(2)
+    act(() => result.current.pause())
+    act(() => result.current.actions.startGame())
+    await act(async () => { rolls[1].resolve(); await vi.advanceTimersByTimeAsync(30000) })
+    expect(result.current.state.phase).toBe('ready')
+    expect(result.current.state.turnScore).toBe(0)
+    expect(random).toHaveBeenCalledTimes(12)
+    unmount()
+  })
+
+  it('retains AI inspection and skill usage while rules or settings cover the duel', async () => {
+    const { result, rolls, unmount } = setup()
+    act(() => result.current.actions.roll())
+    await act(async () => rolls[0].resolve())
+    act(() => result.current.actions.toggleDie(result.current.state.rolledDice[0].id))
+    act(() => result.current.actions.bank())
+    await act(async () => vi.advanceTimersByTimeAsync(20))
+    await act(async () => rolls[1].resolve())
+    await act(async () => vi.advanceTimersByTimeAsync(4))
+    act(() => result.current.actions.setRulesOpen(true))
+    const state = result.current.state
+    await act(async () => vi.advanceTimersByTimeAsync(10000))
+    expect(result.current.state).toBe(state)
+    act(() => result.current.actions.setRulesOpen(false))
+    await act(async () => vi.advanceTimersByTimeAsync(1000))
+    expect(result.current.state).toBe(state)
+    act(() => result.current.resume())
+    await act(async () => vi.advanceTimersByTimeAsync(5))
+    expect(result.current.state).toBe(state)
+    await act(async () => vi.advanceTimersByTimeAsync(1))
+    expect(result.current.state.rolledDice.every((d) => d.selected)).toBe(true)
     unmount()
   })
 })

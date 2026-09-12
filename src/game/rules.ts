@@ -45,6 +45,7 @@ export function hasWon(score: number, targetScore: number): boolean {
 
 export function cloneGameSettings(settings: GameSettings): GameSettings {
   return {
+    ...(settings.scoringVersion !== undefined ? { scoringVersion: settings.scoringVersion } : {}),
     targetScore: settings.targetScore,
     aiDifficulty: settings.aiDifficulty,
     dieLoadout: [...settings.dieLoadout],

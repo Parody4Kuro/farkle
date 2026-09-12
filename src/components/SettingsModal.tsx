@@ -99,7 +99,7 @@ export function SettingsModal({
             <span>可自由组合</span>
           </div>
           <div className="modifier-grid">
-            {MODIFIERS.map((modifier) => {
+            {MODIFIERS.filter((modifier) => !modifier.adventureOnly).map((modifier) => {
               const active = settings.modifierIds.includes(modifier.id)
               return (
                 <button

@@ -9,6 +9,8 @@ interface ActionBarProps {
   canBank: boolean
   abilities: GameModifier[]
   modifierUsage: ModifierUsage
+  abilityDisabledReasons?: Record<string, string | undefined>
+  paused?: boolean
   onRoll: () => void
   onBank: () => void
   onUseModifier: (modifierId: string) => void
@@ -22,6 +24,8 @@ export function ActionBar({
   canBank,
   abilities,
   modifierUsage,
+  abilityDisabledReasons,
+  paused = false,
   onRoll,
   onBank,
   onUseModifier,
@@ -29,7 +33,7 @@ export function ActionBar({
   const ready = phase === 'ready'
   const selecting = phase === 'selecting'
   const rolling = phase === 'rolling'
-  const disabled = !humanTurn || rolling
+  const disabled = paused || !humanTurn || rolling
 
   return (
     <div className="actions-wrap">
@@ -38,16 +42,18 @@ export function ActionBar({
           {abilities.map((modifier) => {
             const spent = !canUseModifier(modifier, modifierUsage)
             const needsValidSelection = modifier.activation?.ability === 'double-down'
+            const reason = abilityDisabledReasons?.[modifier.id]
             return (
               <button
                 className="ability-button"
                 type="button"
-                disabled={disabled || spent || (needsValidSelection && !selectionValid)}
+                disabled={disabled || spent || Boolean(reason) || (needsValidSelection && !selectionValid)}
+                title={reason ?? modifier.description}
                 key={modifier.id}
                 onClick={() => onUseModifier(modifier.id)}
               >
                 <span aria-hidden="true">{modifier.symbol}</span>
-                {modifier.name} {spent && '· 已使用'}
+                {modifier.name} {spent ? '· 已使用' : reason?.includes('已锁定') ? '· 已锁定' : ''}
               </button>
             )
           })}

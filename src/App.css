@@ -185,7 +185,7 @@ button.die:hover { transform: translateY(-5px) rotate(var(--tilt, 0deg)); filter
 }
 .primary-action span { margin-right: 10px; }
 .primary-action:disabled { opacity: .42; filter: grayscale(.5); cursor: not-allowed; box-shadow: 0 3px 0 #5e402a; }
-.primary-action:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+.primary-action:not(:disabled):hover { filter: brightness(1.08); }
 .secondary-action { min-width: 150px; margin-top: 26px; padding: 13px 22px; color: var(--cream); font: 700 .76rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; background: rgba(18,11,7,.64); border: 1px solid var(--copper); box-shadow: 0 4px 0 #4c291a; cursor: pointer; }
 .secondary-action:disabled { opacity: .35; cursor: not-allowed; }
 .footer-bar { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 18px; color: #9d8e74; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; }

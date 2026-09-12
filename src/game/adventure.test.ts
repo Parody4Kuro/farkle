@@ -3,6 +3,10 @@ import { adventureReducer as reduce, createAdventure, type AdventureRun } from '
 import { createInitialState } from './rules'
 import { normalizeAdventure, recordAdventure, EMPTY_PROFILE } from '../storage/adventureStorage'
 import type { DiceValue } from './types'
+import { addInventoryItem, createInventory } from './inventory'
+
+function opened(seed: number, id: string) { return reduce(createAdventure(seed, id), { type: 'SELECT_CORE', id: 'core-steady' }) }
+function bare(seed: number, id: string): AdventureRun { const run = opened(seed, id); return { ...run, modifiers: [] } }
 
 function selected(run: AdventureRun, values: DiceValue[], total = 0): AdventureRun {
   return { ...run, stage: 'playing', flow: 'selecting', game: { ...run.game, currentPlayer: 'human', phase: 'selecting',
@@ -16,14 +20,14 @@ function lose(run: AdventureRun) {
 
 describe('four tables adventure', () => {
   it('offers one persistent choice per ordinary victory and ends at the boss', () => {
-    let run = createAdventure(27, 'test')
+    let run = opened(27, 'test')
     for (let table = 0; table < 3; table++) {
       run = reduce(run, { type: 'SIT' })
       expect(run.game.config.targetScore).toBe(2000)
       run = win(run)
       expect(run.stage).toBe('reward')
       expect(new Set(run.rewards.map((r) => r.id)).size).toBe(3)
-      const pick = { type: 'REWARD' as const, id: run.rewards[0].id, slot: 0 }
+      const pick = { type: 'REWARD' as const, id: run.rewards[0].id, offerId: run.rewardOfferId! }
       run = reduce(run, pick)
       expect(reduce(run, pick)).toBe(run)
       expect(run.table).toBe(table + 1)
@@ -38,11 +42,11 @@ describe('four tables adventure', () => {
     expect(recordAdventure(profile, run)).toBe(profile)
   })
   it('allows one loss, a first-loss boss retry, and ends on the second loss', () => {
-    let run = lose(reduce(createAdventure(5, 'loss'), { type: 'SIT' }))
-    expect([run.losses, run.stage, run.table]).toEqual([1, 'seat', 1])
+    let run = lose(reduce(opened(5, 'loss'), { type: 'SIT' }))
+    expect([run.losses, run.stage, run.table]).toEqual([1, 'seat', 0])
     run = lose(reduce(run, { type: 'SIT' }))
     expect([run.losses, run.stage]).toEqual([2, 'lost'])
-    let boss = reduce({ ...createAdventure(6, 'boss'), table: 3 }, { type: 'SIT' })
+    let boss = reduce({ ...opened(6, 'boss'), table: 3 }, { type: 'SIT' })
     boss = lose(boss)
     expect([boss.losses, boss.stage, boss.table]).toEqual([1, 'seat', 3])
     boss = reduce(boss, { type: 'SIT' })
@@ -50,20 +54,29 @@ describe('four tables adventure', () => {
     expect(win(boss).stage).toBe('won')
     expect(lose(boss).stage).toBe('lost')
   })
-  it('requires a replacement slot for dice and a third badge, without changing the finished match snapshot', () => {
-    const run = { ...win(reduce(createAdventure(1, 'loot'), { type: 'SIT' })), modifiers: ['golden-one', 'double-down'],
-      rewards: [{ id: 'charm', kind: 'modifier' as const, definitionId: 'lucky-charm' }] }
-    expect(reduce(run, { type: 'REWARD', id: 'charm' })).toBe(run)
-    const next = reduce(run, { type: 'REWARD', id: 'charm', slot: 1 })
-    expect(next.modifiers).toEqual(['golden-one', 'lucky-charm'])
-    expect(next.game.config.modifierIds).toEqual([])
-    expect(reduce(next, { type: 'SIT' }).game.config.modifierIds).toEqual(next.modifiers)
+  it('claims rewards into inventory once, rejects stale offers, and freezes equipped match snapshots', () => {
+    const won = win(reduce(opened(1, 'loot'), { type: 'SIT' }))
+    const run = { ...won, rewards: [{ id: 'charm', kind: 'modifier' as const, definitionId: 'lucky-charm' }] }
+    expect(reduce(run, { type: 'REWARD', id: 'charm', offerId: 'old-offer' })).toBe(run)
+    const pick = { type: 'REWARD' as const, id: 'charm', offerId: run.rewardOfferId! }
+    const next = reduce(run, pick)
+    expect(next.inventory.modifiers).toEqual(['core-steady', 'lucky-charm'])
+    expect(next.modifiers).toEqual(['core-steady'])
+    expect(next.game).toBe(run.game)
+    expect(reduce(next, pick)).toBe(next)
+    const equipped = reduce(next, { type: 'SIT', modifiers: ['lucky-charm'] })
+    expect(equipped.game.config.modifierIds).toEqual(['lucky-charm'])
+    expect(equipped.inventory.modifiers).toContain('core-steady')
+    expect(reduce(equipped, { type: 'SIT', modifiers: [] })).toBe(equipped)
+    const later = { ...run, rewardOfferId: 'later-offer' }
+    expect(reduce(later, pick)).toBe(later)
     const dieRun = { ...run, rewards: [{ id: 'die', kind: 'die' as const, definitionId: 'joker' }] }
-    expect(reduce(dieRun, { type: 'REWARD', id: 'die', slot: 6 })).toBe(dieRun)
-    expect(reduce(dieRun, { type: 'REWARD', id: 'die', slot: 4 }).loadout[4]).toBe('joker')
+    const withDie = reduce(dieRun, { type: 'REWARD', id: 'die', offerId: run.rewardOfferId! })
+    expect(withDie.inventory.dice.joker).toBe(1)
+    expect(withDie.loadout).toEqual(run.loadout)
   })
   it('retains pending weighted rolls and the random stream after JSON restoration', () => {
-    const run = reduce(reduce(createAdventure(54321, 'resume'), { type: 'SIT' }), { type: 'ROLL' })
+    const run = reduce(reduce(opened(54321, 'resume'), { type: 'SIT' }), { type: 'ROLL' })
     const restored = normalizeAdventure(JSON.parse(JSON.stringify(run)))!
     expect(restored.pendingDice).toEqual(run.pendingDice)
     expect(restored.rng).toBe(run.rng)
@@ -71,8 +84,8 @@ describe('four tables adventure', () => {
     expect(reduce(run, { type: 'ROLL' })).toBe(run)
   })
   it('preserves special dice across rerolls and restores a full seven-die hot hand', () => {
-    let run = createAdventure(88, 'hot')
-    run = { ...run, modifiers: ['loaded-hand'], loadout: ['joker', ...Array<string>(5).fill('standard')] }
+    let run = bare(88, 'hot')
+    run = { ...run, modifiers: ['loaded-hand'], loadout: ['joker', ...Array<string>(5).fill('standard')], inventory: createInventory(['joker', ...Array<string>(5).fill('standard')], ['loaded-hand']) }
     run = reduce(run, { type: 'SIT' })
     run = selected(run, [1, 5])
     run.game.rolledDice[1] = { ...run.game.rolledDice[1], selected: false, definitionId: 'joker' }
@@ -85,7 +98,7 @@ describe('four tables adventure', () => {
     expect(run.game.turnScore).toBe(200)
   })
   it('does not let an illegal mixed selection bank or roll, and locks a doubled selection', () => {
-    let run = selected(createAdventure(7, 'bad'), [1, 2], 400)
+    let run = selected(bare(7, 'bad'), [1, 2], 400)
     expect(reduce(run, { type: 'BANK' })).toBe(run)
     expect(reduce(run, { type: 'ROLL' })).toBe(run)
     run = { ...run, modifiers: ['double-down'], game: createInitialState({ ...run.game.config, modifierIds: ['double-down'] }) }
@@ -96,8 +109,8 @@ describe('four tables adventure', () => {
     expect(reduce(run, { type: 'BANK' }).game.scores.human).toBe(200)
   })
   it('persists a consumed charm before reroll and only loses temporary points on a second bust', () => {
-    let run = createAdventure(7, 'charm')
-    run = { ...run, modifiers: ['lucky-charm'] }
+    let run = bare(7, 'charm')
+    run = { ...run, modifiers: ['lucky-charm'], inventory: addInventoryItem(run.inventory, 'modifier', 'lucky-charm') }
     run = reduce(reduce(run, { type: 'SIT' }), { type: 'ROLL' })
     const rig = (r: AdventureRun): AdventureRun => ({ ...r, game: { ...r.game, turnScore: 600, scores: { human: 200, ai: 100 } },
       pendingDice: [2, 3].map((value, i) => ({ id: `b${i}`, definitionId: 'standard', value: value as 2 | 3, selected: false })), remainingLoadout: ['standard', 'standard'] })
@@ -113,7 +126,7 @@ describe('four tables adventure', () => {
   })
   it('rejects malformed and incompatible saves', () => {
     const run = createAdventure(1, 'save')
-    for (const patch of [{ version: 2 }, { table: 5 }, { modifiers: ['unknown'] }, { rng: NaN }, { game: {} }, { stage: 'playing', flow: 'decide' }]) {
+    for (const patch of [{ version: 3 }, { table: 5 }, { modifiers: ['unknown'] }, { rng: NaN }, { game: {} }, { stage: 'playing', flow: 'decide' }]) {
       expect(normalizeAdventure({ ...run, ...patch })).toBeNull()
     }
     expect(normalizeAdventure(run)).not.toBeNull()

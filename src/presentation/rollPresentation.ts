@@ -1,4 +1,5 @@
 import type { DieInstance, PlayerId } from '../game/types'
+import { GamePlayback } from './GamePlayback'
 
 export interface RollRequest {
   id: number
@@ -16,6 +17,10 @@ export class RollPresentation {
   private listeners = new Set<() => void>()
   private resolve?: () => void
   private ready = false
+  private cancelFinish = () => {}
+  readonly playback: GamePlayback
+
+  constructor(playback = new GamePlayback()) { this.playback = playback }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -34,13 +39,13 @@ export class RollPresentation {
   }
 
   present: PresentRoll = (request, signal) => {
-    this.finish()
+    this.complete()
     if (signal.aborted) return Promise.resolve()
     return new Promise<void>((resolve) => {
-      const timeout = window.setTimeout(() => this.finish(request.id), this.ready ? 5500 : 650)
-      const onAbort = () => this.finish(request.id)
+      const cancelTimeout = this.playback.schedule(() => this.finish(request.id), this.ready ? 5500 : 650)
+      const onAbort = () => this.complete(request.id)
       this.resolve = () => {
-        window.clearTimeout(timeout)
+        cancelTimeout()
         signal.removeEventListener('abort', onAbort)
         resolve()
       }
@@ -52,6 +57,16 @@ export class RollPresentation {
 
   finish(id?: number) {
     if (id !== undefined && this.current?.id !== id) return
+    if (!this.current) return
+    const currentId = this.current.id
+    this.cancelFinish()
+    this.cancelFinish = this.playback.whenRunning(() => this.complete(currentId))
+  }
+
+  private complete(id?: number) {
+    if (id !== undefined && this.current?.id !== id) return
+    this.cancelFinish()
+    this.cancelFinish = () => {}
     const resolve = this.resolve
     this.resolve = undefined
     this.current = null

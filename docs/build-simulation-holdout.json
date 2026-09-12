@@ -1,0 +1,2271 @@
+{
+  "protocol": "Heuristic simulation v1; shared pure reducer, weighted RNG, adjusted DFS; each row reuses the same starting seed list, then actions may consume different streams.",
+  "scoringVersion": 1,
+  "cores": [
+    {
+      "id": "core-steady",
+      "benefit": "单颗 1、5 得分翻倍",
+      "cost": "同点组合与顺子得分减半"
+    },
+    {
+      "id": "core-kindred",
+      "benefit": "三至六同得分增加 50%",
+      "cost": "单骰与顺子得分减半"
+    },
+    {
+      "id": "core-wanderer",
+      "benefit": "顺子得分三倍，含 Joker 的同点组合得分翻倍",
+      "cost": "不含 Joker 的同点组合得分减少 25%"
+    }
+  ],
+  "samplesPerRow": 120,
+  "seedBase": 970003,
+  "seedStride": 7919,
+  "limitations": [
+    "No timing or human preference model.",
+    "Normal/aggressive risk policies are heuristics, not optimal play.",
+    "Boss rows compare reachable equipment counterfactuals, not the probability of drawing those rewards.",
+    "Full nights keep the opening core equipped to measure that direction; actual players may change it.",
+    "Golden One takes the largest immediate positive gain; Double Down activates at 350 selected points or a winning opportunity.",
+    "At 120 runs per row, a 50% win rate has an approximate 95% binomial margin of ±9 percentage points."
+  ],
+  "nights": [
+    {
+      "origin": "traveller",
+      "core": "core-steady",
+      "runs": 120,
+      "wins": 56,
+      "winRate": 0.467,
+      "meanBank": 595.947,
+      "meanHumanRolls": 27.617,
+      "bustsPerRoll": 0.062,
+      "changedSelectionRate": 0.133,
+      "groupCounts": {
+        "single": 5764,
+        "kind": 673,
+        "straight": 117
+      },
+      "abilityUses": 13,
+      "retries": 94,
+      "samplePath": {
+        "won": true,
+        "metrics": {
+          "humanRolls": 43,
+          "banks": [
+            500,
+            700,
+            500,
+            600,
+            700,
+            600,
+            400,
+            300,
+            500,
+            700,
+            500,
+            900,
+            400,
+            600,
+            200,
+            500,
+            500,
+            500,
+            400,
+            375,
+            400,
+            500,
+            500,
+            900
+          ],
+          "busts": 0,
+          "singles": 69,
+          "kinds": 6,
+          "straights": 1,
+          "changedSelections": 6,
+          "selections": 41,
+          "abilities": 0
+        },
+        "tableWins": 4,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-steady",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "high-roller",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "traveller",
+      "core": "core-kindred",
+      "runs": 120,
+      "wins": 58,
+      "winRate": 0.483,
+      "meanBank": 804.042,
+      "meanHumanRolls": 31.833,
+      "bustsPerRoll": 0.108,
+      "changedSelectionRate": 0.009,
+      "groupCounts": {
+        "single": 4710,
+        "kind": 963,
+        "straight": 175
+      },
+      "abilityUses": 22,
+      "retries": 82,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 27,
+          "banks": [
+            400,
+            200,
+            375,
+            400,
+            1500
+          ],
+          "busts": 6,
+          "singles": 41,
+          "kinds": 3,
+          "straights": 0,
+          "changedSelections": 0,
+          "selections": 21,
+          "abilities": 0
+        },
+        "tableWins": 0,
+        "retries": 1,
+        "rewards": [],
+        "finalModifiers": [
+          "core-kindred"
+        ],
+        "finalDice": [
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "traveller",
+      "core": "core-wanderer",
+      "runs": 120,
+      "wins": 58,
+      "winRate": 0.483,
+      "meanBank": 839.56,
+      "meanHumanRolls": 29.825,
+      "bustsPerRoll": 0.102,
+      "changedSelectionRate": 0.002,
+      "groupCounts": {
+        "single": 4493,
+        "kind": 917,
+        "straight": 200
+      },
+      "abilityUses": 24,
+      "retries": 90,
+      "samplePath": {
+        "won": true,
+        "metrics": {
+          "humanRolls": 58,
+          "banks": [
+            300,
+            800,
+            400,
+            300,
+            500,
+            300,
+            375,
+            400,
+            425,
+            350,
+            750,
+            250,
+            850,
+            2300,
+            350,
+            2500,
+            1450
+          ],
+          "busts": 4,
+          "singles": 63,
+          "kinds": 11,
+          "straights": 2,
+          "changedSelections": 0,
+          "selections": 47,
+          "abilities": 0
+        },
+        "tableWins": 4,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-wanderer",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "high-roller",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "artisan",
+      "core": "core-steady",
+      "runs": 120,
+      "wins": 53,
+      "winRate": 0.442,
+      "meanBank": 592.164,
+      "meanHumanRolls": 27.392,
+      "bustsPerRoll": 0.051,
+      "changedSelectionRate": 0.154,
+      "groupCounts": {
+        "single": 6137,
+        "kind": 555,
+        "straight": 133
+      },
+      "abilityUses": 21,
+      "retries": 99,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 43,
+          "banks": [
+            500,
+            800,
+            600,
+            400,
+            700,
+            700,
+            500,
+            500,
+            600,
+            500,
+            500,
+            500,
+            400,
+            950,
+            300,
+            500,
+            375,
+            400,
+            600,
+            600,
+            600,
+            700
+          ],
+          "busts": 1,
+          "singles": 76,
+          "kinds": 6,
+          "straights": 1,
+          "changedSelections": 6,
+          "selections": 39,
+          "abilities": 0
+        },
+        "tableWins": 3,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-steady",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "lucky-five",
+          "high-roller",
+          "high-roller",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "artisan",
+      "core": "core-kindred",
+      "runs": 120,
+      "wins": 57,
+      "winRate": 0.475,
+      "meanBank": 777.983,
+      "meanHumanRolls": 33.108,
+      "bustsPerRoll": 0.099,
+      "changedSelectionRate": 0.004,
+      "groupCounts": {
+        "single": 5204,
+        "kind": 1012,
+        "straight": 214
+      },
+      "abilityUses": 16,
+      "retries": 101,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 56,
+          "banks": [
+            1550,
+            175,
+            175,
+            800,
+            350,
+            375,
+            950,
+            850,
+            800,
+            200,
+            1500,
+            200,
+            550,
+            975,
+            400,
+            750,
+            175,
+            625,
+            375,
+            750
+          ],
+          "busts": 6,
+          "singles": 72,
+          "kinds": 12,
+          "straights": 3,
+          "changedSelections": 0,
+          "selections": 45,
+          "abilities": 0
+        },
+        "tableWins": 3,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-kindred",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "high-roller",
+          "high-roller",
+          "lucky-five",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "artisan",
+      "core": "core-wanderer",
+      "runs": 120,
+      "wins": 60,
+      "winRate": 0.5,
+      "meanBank": 861.699,
+      "meanHumanRolls": 29.633,
+      "bustsPerRoll": 0.094,
+      "changedSelectionRate": 0.003,
+      "groupCounts": {
+        "single": 4754,
+        "kind": 930,
+        "straight": 206
+      },
+      "abilityUses": 15,
+      "retries": 98,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 18,
+          "banks": [
+            850,
+            350,
+            350,
+            475,
+            300,
+            250,
+            575,
+            300
+          ],
+          "busts": 1,
+          "singles": 29,
+          "kinds": 4,
+          "straights": 0,
+          "changedSelections": 0,
+          "selections": 17,
+          "abilities": 0
+        },
+        "tableWins": 0,
+        "retries": 1,
+        "rewards": [],
+        "finalModifiers": [
+          "core-wanderer"
+        ],
+        "finalDice": [
+          "high-roller",
+          "lucky-five",
+          "standard",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "wanderer",
+      "core": "core-steady",
+      "runs": 120,
+      "wins": 64,
+      "winRate": 0.533,
+      "meanBank": 619.651,
+      "meanHumanRolls": 27.158,
+      "bustsPerRoll": 0.054,
+      "changedSelectionRate": 0.143,
+      "groupCounts": {
+        "single": 5419,
+        "kind": 891,
+        "straight": 180
+      },
+      "abilityUses": 24,
+      "retries": 93,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 28,
+          "banks": [
+            450,
+            700,
+            600,
+            400,
+            700,
+            375,
+            500,
+            400,
+            100,
+            600,
+            600,
+            500,
+            1000,
+            500
+          ],
+          "busts": 1,
+          "singles": 37,
+          "kinds": 5,
+          "straights": 1,
+          "changedSelections": 1,
+          "selections": 25,
+          "abilities": 0
+        },
+        "tableWins": 2,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand"
+        ],
+        "finalModifiers": [
+          "core-steady",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "joker",
+          "high-roller",
+          "standard",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "wanderer",
+      "core": "core-kindred",
+      "runs": 120,
+      "wins": 79,
+      "winRate": 0.658,
+      "meanBank": 890.882,
+      "meanHumanRolls": 29.217,
+      "bustsPerRoll": 0.082,
+      "changedSelectionRate": 0.025,
+      "groupCounts": {
+        "single": 4296,
+        "kind": 1136,
+        "straight": 218
+      },
+      "abilityUses": 21,
+      "retries": 69,
+      "samplePath": {
+        "won": false,
+        "metrics": {
+          "humanRolls": 40,
+          "banks": [
+            800,
+            875,
+            375,
+            750,
+            175,
+            175,
+            975,
+            175,
+            500,
+            1600,
+            175,
+            1500,
+            1150,
+            925,
+            325,
+            175,
+            475,
+            625,
+            175
+          ],
+          "busts": 1,
+          "singles": 48,
+          "kinds": 11,
+          "straights": 3,
+          "changedSelections": 0,
+          "selections": 38,
+          "abilities": 0
+        },
+        "tableWins": 3,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-kindred",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "joker",
+          "high-roller",
+          "high-roller",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    },
+    {
+      "origin": "wanderer",
+      "core": "core-wanderer",
+      "runs": 120,
+      "wins": 95,
+      "winRate": 0.792,
+      "meanBank": 1234.455,
+      "meanHumanRolls": 22.4,
+      "bustsPerRoll": 0.078,
+      "changedSelectionRate": 0.011,
+      "groupCounts": {
+        "single": 3186,
+        "kind": 834,
+        "straight": 262
+      },
+      "abilityUses": 23,
+      "retries": 63,
+      "samplePath": {
+        "won": true,
+        "metrics": {
+          "humanRolls": 47,
+          "banks": [
+            1550,
+            4500,
+            5175,
+            400,
+            300,
+            950,
+            350,
+            2000,
+            2300,
+            350,
+            250,
+            350,
+            2250
+          ],
+          "busts": 4,
+          "singles": 49,
+          "kinds": 4,
+          "straights": 5,
+          "changedSelections": 1,
+          "selections": 36,
+          "abilities": 0
+        },
+        "tableWins": 4,
+        "retries": 1,
+        "rewards": [
+          "lucky-charm",
+          "loaded-hand",
+          "high-roller"
+        ],
+        "finalModifiers": [
+          "core-wanderer",
+          "lucky-charm"
+        ],
+        "finalDice": [
+          "joker",
+          "high-roller",
+          "high-roller",
+          "standard",
+          "standard",
+          "standard"
+        ]
+      }
+    }
+  ],
+  "duels": [
+    {
+      "profile": "fair-first-table",
+      "style": "normal",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 72,
+      "winRate": 0.6,
+      "meanBank": 604.789,
+      "meanHumanRolls": 8.025,
+      "bustsPerRoll": 0.142,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1203,
+        "kind": 236,
+        "straight": 38
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "normal",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 73,
+      "winRate": 0.608,
+      "meanBank": 566.473,
+      "meanHumanRolls": 6.833,
+      "bustsPerRoll": 0.113,
+      "changedSelectionRate": 0.114,
+      "groupCounts": {
+        "single": 1290,
+        "kind": 159,
+        "straight": 28
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 77,
+      "winRate": 0.642,
+      "meanBank": 714.127,
+      "meanHumanRolls": 8.117,
+      "bustsPerRoll": 0.139,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1191,
+        "kind": 243,
+        "straight": 43
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 72,
+      "winRate": 0.6,
+      "meanBank": 740.494,
+      "meanHumanRolls": 7.658,
+      "bustsPerRoll": 0.147,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1130,
+        "kind": 235,
+        "straight": 39
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "aggressive",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 65,
+      "winRate": 0.542,
+      "meanBank": 809.787,
+      "meanHumanRolls": 9.783,
+      "bustsPerRoll": 0.201,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1342,
+        "kind": 231,
+        "straight": 53
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 71,
+      "winRate": 0.592,
+      "meanBank": 711.511,
+      "meanHumanRolls": 8.95,
+      "bustsPerRoll": 0.181,
+      "changedSelectionRate": 0.103,
+      "groupCounts": {
+        "single": 1482,
+        "kind": 174,
+        "straight": 30
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 63,
+      "winRate": 0.525,
+      "meanBank": 934.651,
+      "meanHumanRolls": 10.075,
+      "bustsPerRoll": 0.207,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1370,
+        "kind": 238,
+        "straight": 48
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "fair-first-table",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 64,
+      "winRate": 0.533,
+      "meanBank": 1100.658,
+      "meanHumanRolls": 9.592,
+      "bustsPerRoll": 0.217,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1291,
+        "kind": 219,
+        "straight": 46
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 65,
+      "winRate": 0.542,
+      "meanBank": 673.296,
+      "meanHumanRolls": 15.475,
+      "bustsPerRoll": 0.141,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2408,
+        "kind": 446,
+        "straight": 86
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 76,
+      "winRate": 0.633,
+      "meanBank": 593.767,
+      "meanHumanRolls": 13.517,
+      "bustsPerRoll": 0.092,
+      "changedSelectionRate": 0.129,
+      "groupCounts": {
+        "single": 2794,
+        "kind": 259,
+        "straight": 61
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 70,
+      "winRate": 0.583,
+      "meanBank": 781.002,
+      "meanHumanRolls": 15.05,
+      "bustsPerRoll": 0.148,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2278,
+        "kind": 427,
+        "straight": 96
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 79,
+      "winRate": 0.658,
+      "meanBank": 854.842,
+      "meanHumanRolls": 14.592,
+      "bustsPerRoll": 0.135,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2250,
+        "kind": 381,
+        "straight": 89
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "lucky-charm",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 108,
+      "winRate": 0.9,
+      "meanBank": 777.09,
+      "meanHumanRolls": 9.033,
+      "bustsPerRoll": 0.015,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1487,
+        "kind": 467,
+        "straight": 125
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 96,
+      "winRate": 0.8,
+      "meanBank": 598.604,
+      "meanHumanRolls": 13.942,
+      "bustsPerRoll": 0.023,
+      "changedSelectionRate": 0.117,
+      "groupCounts": {
+        "single": 2795,
+        "kind": 255,
+        "straight": 69
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 88,
+      "winRate": 0.733,
+      "meanBank": 637.967,
+      "meanHumanRolls": 9.917,
+      "bustsPerRoll": 0.047,
+      "changedSelectionRate": 0.202,
+      "groupCounts": {
+        "single": 2344,
+        "kind": 338,
+        "straight": 106
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 101,
+      "winRate": 0.842,
+      "meanBank": 703.623,
+      "meanHumanRolls": 8.383,
+      "bustsPerRoll": 0.046,
+      "changedSelectionRate": 0.26,
+      "groupCounts": {
+        "single": 2550,
+        "kind": 217,
+        "straight": 49
+      },
+      "abilityUses": 727,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 80,
+      "winRate": 0.667,
+      "meanBank": 660.946,
+      "meanHumanRolls": 11.617,
+      "bustsPerRoll": 0.081,
+      "changedSelectionRate": 0.133,
+      "groupCounts": {
+        "single": 2479,
+        "kind": 232,
+        "straight": 68
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 84,
+      "winRate": 0.7,
+      "meanBank": 717.113,
+      "meanHumanRolls": 18.158,
+      "bustsPerRoll": 0.067,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2653,
+        "kind": 439,
+        "straight": 94
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 101,
+      "winRate": 0.842,
+      "meanBank": 914.983,
+      "meanHumanRolls": 9.067,
+      "bustsPerRoll": 0.08,
+      "changedSelectionRate": 0.021,
+      "groupCounts": {
+        "single": 1480,
+        "kind": 458,
+        "straight": 102
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 110,
+      "winRate": 0.917,
+      "meanBank": 1004.174,
+      "meanHumanRolls": 9.533,
+      "bustsPerRoll": 0.113,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1759,
+        "kind": 415,
+        "straight": 80
+      },
+      "abilityUses": 642,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 95,
+      "winRate": 0.792,
+      "meanBank": 949.526,
+      "meanHumanRolls": 12.15,
+      "bustsPerRoll": 0.131,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1869,
+        "kind": 365,
+        "straight": 74
+      },
+      "abilityUses": 119,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 84,
+      "winRate": 0.7,
+      "meanBank": 758.522,
+      "meanHumanRolls": 16.483,
+      "bustsPerRoll": 0.053,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2514,
+        "kind": 391,
+        "straight": 77
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 112,
+      "winRate": 0.933,
+      "meanBank": 1037.936,
+      "meanHumanRolls": 8.483,
+      "bustsPerRoll": 0.068,
+      "changedSelectionRate": 0.003,
+      "groupCounts": {
+        "single": 1383,
+        "kind": 445,
+        "straight": 107
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 103,
+      "winRate": 0.858,
+      "meanBank": 1041.557,
+      "meanHumanRolls": 8.892,
+      "bustsPerRoll": 0.115,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1660,
+        "kind": 396,
+        "straight": 87
+      },
+      "abilityUses": 633,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 86,
+      "winRate": 0.717,
+      "meanBank": 984.875,
+      "meanHumanRolls": 12.008,
+      "bustsPerRoll": 0.126,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1887,
+        "kind": 317,
+        "straight": 81
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 66,
+      "winRate": 0.55,
+      "meanBank": 906.279,
+      "meanHumanRolls": 20.358,
+      "bustsPerRoll": 0.19,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2946,
+        "kind": 492,
+        "straight": 96
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 62,
+      "winRate": 0.517,
+      "meanBank": 803.423,
+      "meanHumanRolls": 18.767,
+      "bustsPerRoll": 0.17,
+      "changedSelectionRate": 0.117,
+      "groupCounts": {
+        "single": 3378,
+        "kind": 286,
+        "straight": 70
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 69,
+      "winRate": 0.575,
+      "meanBank": 1061.42,
+      "meanHumanRolls": 20.175,
+      "bustsPerRoll": 0.187,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2947,
+        "kind": 443,
+        "straight": 104
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 82,
+      "winRate": 0.683,
+      "meanBank": 1171.021,
+      "meanHumanRolls": 19.35,
+      "bustsPerRoll": 0.198,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2736,
+        "kind": 421,
+        "straight": 96
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "lucky-charm",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 106,
+      "winRate": 0.883,
+      "meanBank": 964.471,
+      "meanHumanRolls": 13.075,
+      "bustsPerRoll": 0.055,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1938,
+        "kind": 470,
+        "straight": 128
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 91,
+      "winRate": 0.758,
+      "meanBank": 766.707,
+      "meanHumanRolls": 17.625,
+      "bustsPerRoll": 0.054,
+      "changedSelectionRate": 0.107,
+      "groupCounts": {
+        "single": 3132,
+        "kind": 235,
+        "straight": 53
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 92,
+      "winRate": 0.767,
+      "meanBank": 827.875,
+      "meanHumanRolls": 13.975,
+      "bustsPerRoll": 0.123,
+      "changedSelectionRate": 0.158,
+      "groupCounts": {
+        "single": 2857,
+        "kind": 377,
+        "straight": 91
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 98,
+      "winRate": 0.817,
+      "meanBank": 854.307,
+      "meanHumanRolls": 11.692,
+      "bustsPerRoll": 0.129,
+      "changedSelectionRate": 0.218,
+      "groupCounts": {
+        "single": 2943,
+        "kind": 247,
+        "straight": 54
+      },
+      "abilityUses": 732,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 75,
+      "winRate": 0.625,
+      "meanBank": 783.73,
+      "meanHumanRolls": 15.508,
+      "bustsPerRoll": 0.15,
+      "changedSelectionRate": 0.12,
+      "groupCounts": {
+        "single": 2908,
+        "kind": 255,
+        "straight": 51
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 90,
+      "winRate": 0.75,
+      "meanBank": 1039.499,
+      "meanHumanRolls": 21.292,
+      "bustsPerRoll": 0.107,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2829,
+        "kind": 466,
+        "straight": 101
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 104,
+      "winRate": 0.867,
+      "meanBank": 1159.755,
+      "meanHumanRolls": 11.575,
+      "bustsPerRoll": 0.135,
+      "changedSelectionRate": 0.016,
+      "groupCounts": {
+        "single": 1760,
+        "kind": 507,
+        "straight": 99
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 103,
+      "winRate": 0.858,
+      "meanBank": 1311.614,
+      "meanHumanRolls": 11.033,
+      "bustsPerRoll": 0.155,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1901,
+        "kind": 412,
+        "straight": 96
+      },
+      "abilityUses": 600,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 93,
+      "winRate": 0.775,
+      "meanBank": 1230.864,
+      "meanHumanRolls": 15.283,
+      "bustsPerRoll": 0.185,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2178,
+        "kind": 396,
+        "straight": 77
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 93,
+      "winRate": 0.775,
+      "meanBank": 1032.606,
+      "meanHumanRolls": 21.992,
+      "bustsPerRoll": 0.097,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2955,
+        "kind": 441,
+        "straight": 80
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 105,
+      "winRate": 0.875,
+      "meanBank": 1323.973,
+      "meanHumanRolls": 11.183,
+      "bustsPerRoll": 0.145,
+      "changedSelectionRate": 0.002,
+      "groupCounts": {
+        "single": 1689,
+        "kind": 455,
+        "straight": 98
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 100,
+      "winRate": 0.833,
+      "meanBank": 1362.835,
+      "meanHumanRolls": 11.367,
+      "bustsPerRoll": 0.168,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1869,
+        "kind": 426,
+        "straight": 102
+      },
+      "abilityUses": 625,
+      "retries": 0
+    },
+    {
+      "profile": "artisan-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 77,
+      "winRate": 0.642,
+      "meanBank": 1314.247,
+      "meanHumanRolls": 16.442,
+      "bustsPerRoll": 0.186,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 2356,
+        "kind": 381,
+        "straight": 77
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 89,
+      "winRate": 0.742,
+      "meanBank": 749.301,
+      "meanHumanRolls": 10.825,
+      "bustsPerRoll": 0.105,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1458,
+        "kind": 450,
+        "straight": 152
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 78,
+      "winRate": 0.65,
+      "meanBank": 618.071,
+      "meanHumanRolls": 11.675,
+      "bustsPerRoll": 0.087,
+      "changedSelectionRate": 0.147,
+      "groupCounts": {
+        "single": 2057,
+        "kind": 454,
+        "straight": 112
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 97,
+      "winRate": 0.808,
+      "meanBank": 888.776,
+      "meanHumanRolls": 9.725,
+      "bustsPerRoll": 0.108,
+      "changedSelectionRate": 0.046,
+      "groupCounts": {
+        "single": 1316,
+        "kind": 472,
+        "straight": 73
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 117,
+      "winRate": 0.975,
+      "meanBank": 1447.494,
+      "meanHumanRolls": 6.95,
+      "bustsPerRoll": 0.097,
+      "changedSelectionRate": 0.013,
+      "groupCounts": {
+        "single": 895,
+        "kind": 292,
+        "straight": 107
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "lucky-charm",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 115,
+      "winRate": 0.958,
+      "meanBank": 917.384,
+      "meanHumanRolls": 7.308,
+      "bustsPerRoll": 0.006,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1056,
+        "kind": 441,
+        "straight": 150
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 85,
+      "winRate": 0.708,
+      "meanBank": 602.862,
+      "meanHumanRolls": 12.05,
+      "bustsPerRoll": 0.026,
+      "changedSelectionRate": 0.125,
+      "groupCounts": {
+        "single": 2073,
+        "kind": 457,
+        "straight": 111
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 92,
+      "winRate": 0.767,
+      "meanBank": 673.821,
+      "meanHumanRolls": 9.425,
+      "bustsPerRoll": 0.053,
+      "changedSelectionRate": 0.201,
+      "groupCounts": {
+        "single": 1864,
+        "kind": 438,
+        "straight": 167
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 108,
+      "winRate": 0.9,
+      "meanBank": 803.498,
+      "meanHumanRolls": 7.433,
+      "bustsPerRoll": 0.028,
+      "changedSelectionRate": 0.245,
+      "groupCounts": {
+        "single": 1846,
+        "kind": 365,
+        "straight": 77
+      },
+      "abilityUses": 642,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-steady",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 90,
+      "winRate": 0.75,
+      "meanBank": 676.46,
+      "meanHumanRolls": 10.383,
+      "bustsPerRoll": 0.079,
+      "changedSelectionRate": 0.152,
+      "groupCounts": {
+        "single": 1831,
+        "kind": 411,
+        "straight": 108
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 102,
+      "winRate": 0.85,
+      "meanBank": 896.848,
+      "meanHumanRolls": 10.492,
+      "bustsPerRoll": 0.049,
+      "changedSelectionRate": 0.044,
+      "groupCounts": {
+        "single": 1400,
+        "kind": 471,
+        "straight": 70
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 109,
+      "winRate": 0.908,
+      "meanBank": 1076.429,
+      "meanHumanRolls": 6.925,
+      "bustsPerRoll": 0.055,
+      "changedSelectionRate": 0.082,
+      "groupCounts": {
+        "single": 985,
+        "kind": 466,
+        "straight": 92
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 116,
+      "winRate": 0.967,
+      "meanBank": 1323.791,
+      "meanHumanRolls": 6.467,
+      "bustsPerRoll": 0.071,
+      "changedSelectionRate": 0.008,
+      "groupCounts": {
+        "single": 1018,
+        "kind": 399,
+        "straight": 67
+      },
+      "abilityUses": 496,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-kindred",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 108,
+      "winRate": 0.9,
+      "meanBank": 1150.272,
+      "meanHumanRolls": 7.217,
+      "bustsPerRoll": 0.098,
+      "changedSelectionRate": 0.046,
+      "groupCounts": {
+        "single": 965,
+        "kind": 382,
+        "straight": 49
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 112,
+      "winRate": 0.933,
+      "meanBank": 1333.936,
+      "meanHumanRolls": 7.383,
+      "bustsPerRoll": 0.036,
+      "changedSelectionRate": 0.014,
+      "groupCounts": {
+        "single": 971,
+        "kind": 302,
+        "straight": 97
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 119,
+      "winRate": 0.992,
+      "meanBank": 1691.379,
+      "meanHumanRolls": 4.65,
+      "bustsPerRoll": 0.041,
+      "changedSelectionRate": 0.043,
+      "groupCounts": {
+        "single": 648,
+        "kind": 264,
+        "straight": 111
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 118,
+      "winRate": 0.983,
+      "meanBank": 1711.892,
+      "meanHumanRolls": 4.758,
+      "bustsPerRoll": 0.067,
+      "changedSelectionRate": 0.008,
+      "groupCounts": {
+        "single": 739,
+        "kind": 288,
+        "straight": 69
+      },
+      "abilityUses": 390,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "normal",
+      "modifiers": [
+        "core-wanderer",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 118,
+      "winRate": 0.983,
+      "meanBank": 1917.825,
+      "meanHumanRolls": 5.217,
+      "bustsPerRoll": 0.102,
+      "changedSelectionRate": 0.012,
+      "groupCounts": {
+        "single": 687,
+        "kind": 228,
+        "straight": 76
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [],
+      "runs": 120,
+      "wins": 85,
+      "winRate": 0.708,
+      "meanBank": 968.323,
+      "meanHumanRolls": 13.417,
+      "bustsPerRoll": 0.168,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1641,
+        "kind": 486,
+        "straight": 151
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady"
+      ],
+      "runs": 120,
+      "wins": 72,
+      "winRate": 0.6,
+      "meanBank": 827.719,
+      "meanHumanRolls": 15.7,
+      "bustsPerRoll": 0.171,
+      "changedSelectionRate": 0.131,
+      "groupCounts": {
+        "single": 2453,
+        "kind": 489,
+        "straight": 123
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred"
+      ],
+      "runs": 120,
+      "wins": 95,
+      "winRate": 0.792,
+      "meanBank": 1171.52,
+      "meanHumanRolls": 11.308,
+      "bustsPerRoll": 0.172,
+      "changedSelectionRate": 0.044,
+      "groupCounts": {
+        "single": 1392,
+        "kind": 500,
+        "straight": 79
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer"
+      ],
+      "runs": 120,
+      "wins": 111,
+      "winRate": 0.925,
+      "meanBank": 1764.826,
+      "meanHumanRolls": 8.767,
+      "bustsPerRoll": 0.168,
+      "changedSelectionRate": 0.014,
+      "groupCounts": {
+        "single": 1077,
+        "kind": 322,
+        "straight": 107
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "lucky-charm",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 114,
+      "winRate": 0.95,
+      "meanBank": 1090.381,
+      "meanHumanRolls": 9.358,
+      "bustsPerRoll": 0.044,
+      "changedSelectionRate": 0,
+      "groupCounts": {
+        "single": 1194,
+        "kind": 420,
+        "straight": 169
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 103,
+      "winRate": 0.858,
+      "meanBank": 817.672,
+      "meanHumanRolls": 16.067,
+      "bustsPerRoll": 0.062,
+      "changedSelectionRate": 0.111,
+      "groupCounts": {
+        "single": 2401,
+        "kind": 452,
+        "straight": 112
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 102,
+      "winRate": 0.85,
+      "meanBank": 841.34,
+      "meanHumanRolls": 12.208,
+      "bustsPerRoll": 0.109,
+      "changedSelectionRate": 0.163,
+      "groupCounts": {
+        "single": 2151,
+        "kind": 474,
+        "straight": 156
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 107,
+      "winRate": 0.892,
+      "meanBank": 934.785,
+      "meanHumanRolls": 9.825,
+      "bustsPerRoll": 0.103,
+      "changedSelectionRate": 0.196,
+      "groupCounts": {
+        "single": 2071,
+        "kind": 391,
+        "straight": 90
+      },
+      "abilityUses": 642,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-steady",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 92,
+      "winRate": 0.767,
+      "meanBank": 841.15,
+      "meanHumanRolls": 13.442,
+      "bustsPerRoll": 0.147,
+      "changedSelectionRate": 0.129,
+      "groupCounts": {
+        "single": 2137,
+        "kind": 430,
+        "straight": 113
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 109,
+      "winRate": 0.908,
+      "meanBank": 1125.365,
+      "meanHumanRolls": 13.1,
+      "bustsPerRoll": 0.09,
+      "changedSelectionRate": 0.042,
+      "groupCounts": {
+        "single": 1553,
+        "kind": 508,
+        "straight": 69
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 111,
+      "winRate": 0.925,
+      "meanBank": 1298.077,
+      "meanHumanRolls": 7.95,
+      "bustsPerRoll": 0.101,
+      "changedSelectionRate": 0.066,
+      "groupCounts": {
+        "single": 1049,
+        "kind": 472,
+        "straight": 90
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 115,
+      "winRate": 0.958,
+      "meanBank": 1577.321,
+      "meanHumanRolls": 6.783,
+      "bustsPerRoll": 0.109,
+      "changedSelectionRate": 0.017,
+      "groupCounts": {
+        "single": 1001,
+        "kind": 418,
+        "straight": 51
+      },
+      "abilityUses": 455,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-kindred",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 108,
+      "winRate": 0.9,
+      "meanBank": 1371.046,
+      "meanHumanRolls": 8.625,
+      "bustsPerRoll": 0.15,
+      "changedSelectionRate": 0.042,
+      "groupCounts": {
+        "single": 1105,
+        "kind": 396,
+        "straight": 61
+      },
+      "abilityUses": 120,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "lucky-charm"
+      ],
+      "runs": 120,
+      "wins": 115,
+      "winRate": 0.958,
+      "meanBank": 1613.005,
+      "meanHumanRolls": 9.183,
+      "bustsPerRoll": 0.071,
+      "changedSelectionRate": 0.013,
+      "groupCounts": {
+        "single": 1081,
+        "kind": 314,
+        "straight": 102
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "loaded-hand"
+      ],
+      "runs": 120,
+      "wins": 117,
+      "winRate": 0.975,
+      "meanBank": 2065.492,
+      "meanHumanRolls": 5.508,
+      "bustsPerRoll": 0.109,
+      "changedSelectionRate": 0.046,
+      "groupCounts": {
+        "single": 698,
+        "kind": 262,
+        "straight": 120
+      },
+      "abilityUses": 0,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "golden-one"
+      ],
+      "runs": 120,
+      "wins": 118,
+      "winRate": 0.983,
+      "meanBank": 2069,
+      "meanHumanRolls": 5.45,
+      "bustsPerRoll": 0.119,
+      "changedSelectionRate": 0.01,
+      "groupCounts": {
+        "single": 766,
+        "kind": 291,
+        "straight": 73
+      },
+      "abilityUses": 364,
+      "retries": 0
+    },
+    {
+      "profile": "two-jokers-boss",
+      "style": "aggressive",
+      "modifiers": [
+        "core-wanderer",
+        "double-down"
+      ],
+      "runs": 120,
+      "wins": 113,
+      "winRate": 0.942,
+      "meanBank": 2166.667,
+      "meanHumanRolls": 6.558,
+      "bustsPerRoll": 0.154,
+      "changedSelectionRate": 0.018,
+      "groupCounts": {
+        "single": 829,
+        "kind": 251,
+        "straight": 73
+      },
+      "abilityUses": 120,
+      "retries": 0
+    }
+  ]
+}

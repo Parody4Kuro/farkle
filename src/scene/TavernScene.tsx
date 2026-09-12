@@ -15,6 +15,7 @@ import { TavernCharacter, TavernRoom } from './TavernCharacter'
 import { cameraPreset } from './camera'
 import type { SceneProps } from './sceneTypes'
 import { useReducedMotion } from './useReducedMotion'
+import type { GamePlayback } from '../presentation/GamePlayback'
 
 import { settleMotion, type Motion } from './motion'
 
@@ -28,8 +29,8 @@ const facePlanes = Object.entries(FACE_NORMALS).map(([value, normal]) => ({
   rotation: new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), new Vector3(...normal)),
 }))
 
-function DieModel({ entry, art, motion, hits, reduced }: {
-  entry: SceneDie; art: TavernArt; motion: Motion; hits: HitElements; reduced: boolean
+function DieModel({ entry, art, motion, hits, reduced, playback }: {
+  entry: SceneDie; art: TavernArt; motion: Motion; hits: HitElements; reduced: boolean; playback: GamePlayback
 }) {
   const ref = useRef<Group>(null)
   const { camera, size, invalidate } = useThree()
@@ -47,7 +48,7 @@ function DieModel({ entry, art, motion, hits, reduced }: {
 
   useFrame((_state, delta) => {
     const group = ref.current
-    if (!group) return
+    if (!group || playback.paused) return
     let pose = motion.poses.get(id)
     if (lastValue.current !== entry.die.value && pose) {
       pose = { ...pose, rotation: composeRotation(pose.rotation, faceOffset(pose.rotation, entry.die.value, definition.jokerFace)) }
@@ -67,14 +68,14 @@ function DieModel({ entry, art, motion, hits, reduced }: {
       targetRotation.fromArray(faceOffset(identity, entry.die.value, definition.jokerFace)).premultiply(previewYaw)
     }
     const playing = motion.plan?.dice.some((die) => die.id === id)
-    const ease = initial.current || reduced || playing || wasPlaying.current ? 1 : 1 - Math.exp(-delta * 16)
+    const ease = initial.current || reduced || playing || wasPlaying.current ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * 16)
     wasPlaying.current = Boolean(playing)
     group.position.lerp(targetPosition, ease)
     displayedRotation.copy(group.quaternion).slerp(targetRotation, ease)
     group.quaternion.copy(displayedRotation)
     if (group.position.distanceTo(targetPosition) > 0.002 || group.quaternion.angleTo(targetRotation) > 0.002) invalidate()
     group.scale.setScalar(entry.locked ? 0.66 : 1)
-    group.visible = !playing || reduced || (motion.plan?.start !== undefined && _state.clock.elapsedTime - motion.plan.start >= 0.3)
+    group.visible = !playing || reduced || (motion.plan?.start !== undefined && playback.now() / 1000 - motion.plan.start >= 0.3)
     initial.current = false
     const hit = hits.get(id)
     if (hit) {
@@ -122,6 +123,8 @@ function SceneWorld({ entries, motion, hits, presentation, reduced, onUnavailabl
   const { camera, size, gl, invalidate, setFrameloop } = useThree()
   const [art] = useState(createArt)
   const [visible, setVisible] = useState(!isGameHidden())
+  const playback = presentation.playback
+  const { paused } = useSyncExternalStore(playback.subscribe, playback.getSnapshot, playback.getSnapshot)
   const bodyRotation = useMemo(() => new Quaternion(), [])
   const nextRotation = useMemo(() => new Quaternion(), [])
   const point = useMemo(() => new Vector3(), [])
@@ -153,7 +156,7 @@ function SceneWorld({ entries, motion, hits, presentation, reduced, onUnavailabl
   }, [camera, size, invalidate, opponent, desiredCamera])
 
   useFrame((_state, delta) => {
-    if (!opponent) return
+    if (!opponent || playback.paused) return
     const ease = reduced ? 1 : 1 - Math.exp(-Math.min(delta, 0.1) * 8)
     camera.position.lerp(eye, ease)
     cameraAim.current.lerp(aim, ease)
@@ -166,7 +169,6 @@ function SceneWorld({ entries, motion, hits, presentation, reduced, onUnavailabl
     const lost = (event: Event) => { event.preventDefault(); onUnavailable() }
     const visibility = () => {
       setVisible(!isGameHidden())
-      if (isGameHidden()) presentation.finish()
     }
     gl.domElement.addEventListener('webglcontextlost', lost)
     const stopVisibility = onGameVisibilityChange(visibility)
@@ -177,20 +179,20 @@ function SceneWorld({ entries, motion, hits, presentation, reduced, onUnavailabl
     }
   }, [gl, onUnavailable, presentation])
   useEffect(() => {
-    setFrameloop(visible ? 'demand' : 'never')
-    if (visible) invalidate()
-  }, [visible, setFrameloop, invalidate])
+    setFrameloop(visible && !paused ? 'demand' : 'never')
+    if (visible && !paused) invalidate()
+  }, [visible, paused, setFrameloop, invalidate])
   useEffect(() => () => art.dispose(), [art])
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const plan = motion.plan
-    if (!plan) return
+    if (!plan || playback.paused) return
     invalidate()
-    if (plan.start < 0) plan.start = clock.elapsedTime
+    if (plan.start < 0) plan.start = playback.now() / 1000
     const trajectory = plan.trajectory
     const duration = (trajectory.frames.length - 1) * trajectory.step
     const speed = presentation.getSnapshot()?.fast ? 2.8 : 1
-    const elapsed = reduced ? duration : Math.max(0, Math.min(duration, (clock.elapsedTime - plan.start - 0.3) * speed))
+    const elapsed = reduced ? duration : Math.max(0, Math.min(duration, (playback.now() / 1000 - plan.start - 0.3) * speed))
     const frame = Math.min(trajectory.frames.length - 1, Math.floor(elapsed / trajectory.step))
     const next = Math.min(trajectory.frames.length - 1, frame + 1)
     const alpha = Math.min(1, elapsed / trajectory.step - frame)
@@ -223,14 +225,16 @@ function SceneWorld({ entries, motion, hits, presentation, reduced, onUnavailabl
         shadow-mapSize={[1024, 1024]} shadow-camera-left={-9} shadow-camera-right={9}
         shadow-camera-top={8} shadow-camera-bottom={-8} shadow-normalBias={0.04} />
       <TavernProps art={art} />
-      {opponent && <><TavernRoom moon={appearance === 'moon'} /><TavernCharacter key={opponent.id} opponent={opponent} state={state} reduced={reduced} /></>}
+      {opponent && <><TavernRoom moon={appearance === 'moon'} /><TavernCharacter key={opponent.id} opponent={opponent} state={state} reduced={reduced} playback={playback} /></>}
       <ThrowCup art={art} presentation={presentation} reduced={reduced} hands={Boolean(opponent)} moon={appearance === 'moon'} />
-      {entries.map((entry) => <DieModel key={entry.die.id} entry={entry} art={art} motion={motion} hits={hits} reduced={reduced} />)}
+      {entries.map((entry) => <DieModel key={entry.die.id} entry={entry} art={art} motion={motion} hits={hits} reduced={reduced} playback={playback} />)}
     </>
   )
 }
 
 export default function TavernScene({ state, presentation, selectionValid, onToggleDie, onUnavailable, opponent, view, appearance }: SceneProps) {
+  const playback = presentation.playback
+  const { paused } = useSyncExternalStore(playback.subscribe, playback.getSnapshot, playback.getSnapshot)
   const request = useSyncExternalStore(presentation.subscribe, presentation.getSnapshot, () => null)
   const reduced = useReducedMotion()
   const [preparedId, setPreparedId] = useState<number | null>(null)
@@ -248,17 +252,19 @@ export default function TavernScene({ state, presentation, selectionValid, onTog
     const controller = new AbortController()
     void client.current?.prepare(request.dice.length, controller.signal).then((trajectory) => {
       if (!trajectory || controller.signal.aborted || presentation.getSnapshot()?.id !== request.id) return
-      const final = trajectory.frames.at(-1)!
-      const offsets = request.dice.map((die, i) => faceOffset(final[i].rotation, die.value, getDieDefinition(die.definitionId).jokerFace))
-      // Populate the first pose before mounting meshes; no visible face swap.
-      request.dice.forEach((die, i) => {
-        motion.poses.set(die.id, { position: trajectory.frames[0][i].position, rotation: composeRotation(trajectory.frames[0][i].rotation, offsets[i]) })
-      })
-      motion.plan = { trajectory, dice: request.dice, offsets, id: request.id, start: -1, impact: 0 }
-      setPreparedId(request.id)
+      playback.whenRunning(() => {
+        if (controller.signal.aborted || presentation.getSnapshot()?.id !== request.id) return
+        const final = trajectory.frames.at(-1)!
+        const offsets = request.dice.map((die, i) => faceOffset(final[i].rotation, die.value, getDieDefinition(die.definitionId).jokerFace))
+        request.dice.forEach((die, i) => {
+          motion.poses.set(die.id, { position: trajectory.frames[0][i].position, rotation: composeRotation(trajectory.frames[0][i].rotation, offsets[i]) })
+        })
+        motion.plan = { trajectory, dice: request.dice, offsets, id: request.id, start: -1, impact: 0 }
+        setPreparedId(request.id)
+      }, controller.signal)
     }).catch(() => presentation.finish(request.id))
     return () => { controller.abort(); settleMotion(motion, request.id) }
-  }, [request, motion, presentation])
+  }, [request, motion, presentation, playback])
 
   const readyDice: DieInstance[] = Array.from({ length: state.diceToRoll }, (_, i) => ({
     id: 'ready-' + i, definitionId: state.config.dieLoadout[i] ?? 'standard',
@@ -289,7 +295,7 @@ export default function TavernScene({ state, presentation, selectionValid, onTog
       <div className="scene-vignette" aria-hidden="true" />
       <div className="scene-hit-layer" role="group" aria-label="桌面上的骰子">
         {entries.map(({ die, index, locked: isLocked }) => {
-          const interactive = !isLocked && state.currentPlayer === 'human' && state.phase === 'selecting' && !state.doubledSelection && (!opponent || view !== 'opponent')
+          const interactive = !paused && !isLocked && state.currentPlayer === 'human' && state.phase === 'selecting' && !state.doubledSelection && (!opponent || view !== 'opponent')
           const definition = getDieDefinition(die.definitionId)
           const label = (die.value === JOKER ? 'Joker 骰，显示骷髅面' : '骰子点数 ' + die.value) + '，' + definition.name + (isLocked ? '，已锁定' : die.selected ? '，已选择' : '')
           const className = 'dice-hit' + (die.selected ? ' selected' : '') + (isLocked ? ' locked' : '') + (die.selected && !selectionValid ? ' invalid' : '')

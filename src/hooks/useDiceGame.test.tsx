@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GameAudio, SoundCue } from '../audio/gameAudio'
 import type { AudioPreferences } from '../game/types'
 import { useDiceGame } from './useDiceGame'
+
+beforeEach(() => { vi.spyOn(document, 'hasFocus').mockReturnValue(true) })
+afterEach(() => { vi.restoreAllMocks() })
 
 class MemoryStorage {
   values = new Map<string, string>()

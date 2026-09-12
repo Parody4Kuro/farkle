@@ -7,7 +7,7 @@ export interface Motion {
   plan?: { trajectory: Trajectory; dice: DieInstance[]; offsets: Quat[]; id: number; start: number; impact: number }
 }
 
-/** Early completion (hidden tab, timeout) must reveal landed, matching dice. */
+/** Early completion (renderer failure, active timeout) must reveal landed, matching dice. */
 export function settleMotion(motion: Motion, id?: number) {
   const plan = motion.plan
   if (!plan || (id !== undefined && plan.id !== id)) return

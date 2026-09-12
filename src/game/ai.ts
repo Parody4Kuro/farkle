@@ -1,5 +1,5 @@
 import { calculateBestScore } from './scoring'
-import type { AiDifficulty, DiceValue } from './types'
+import type { AiDifficulty, DiceValue, ScoringContext } from './types'
 
 export interface AiDecisionContext {
   difficulty: AiDifficulty
@@ -18,8 +18,8 @@ const BASE_BANK_THRESHOLD: Record<AiDifficulty, number> = {
   aggressive: 900,
 }
 
-export function chooseAiDice(dice: DiceValue[]): { indices: number[]; score: number } {
-  const result = calculateBestScore(dice)
+export function chooseAiDice(dice: DiceValue[], context?: ScoringContext): { indices: number[]; score: number } {
+  const result = calculateBestScore(dice, context)
   const indices = [...new Set(result.groups.flatMap((group) => group.dieIndices))].sort((a, b) => a - b)
   return { indices, score: result.score }
 }

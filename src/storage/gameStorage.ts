@@ -45,7 +45,7 @@ export function getBrowserStorage(): StorageLike | undefined {
   }
 }
 
-export function normalizeSettings(value: unknown): GameSettings {
+export function normalizeSettings(value: unknown, mode: 'classic' | 'adventure' = 'classic'): GameSettings {
   if (!isRecord(value)) return {
     ...DEFAULT_GAME_SETTINGS,
     dieLoadout: [...DEFAULT_LOADOUT],
@@ -53,12 +53,13 @@ export function normalizeSettings(value: unknown): GameSettings {
   }
 
   const validDice = new Set(DIE_DEFINITIONS.map((definition) => definition.id))
-  const validModifiers = new Set(MODIFIERS.map((modifier) => modifier.id))
+  const validModifiers = new Set(MODIFIERS.filter((modifier) => mode === 'adventure' || !modifier.adventureOnly).map((modifier) => modifier.id))
   const validDifficulties = new Set<AiDifficulty>(['conservative', 'normal', 'aggressive'])
   const storedLoadout = Array.isArray(value.dieLoadout) ? value.dieLoadout : []
   const storedModifiers = Array.isArray(value.modifierIds) ? value.modifierIds : []
 
   return {
+    ...(value.scoringVersion === 1 ? { scoringVersion: 1 } : {}),
     targetScore: TARGET_SCORE_OPTIONS.includes(value.targetScore as typeof TARGET_SCORE_OPTIONS[number])
       ? value.targetScore as number
       : DEFAULT_GAME_SETTINGS.targetScore,

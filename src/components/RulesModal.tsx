@@ -16,7 +16,7 @@ export function RulesModal({ onClose }: RulesModalProps) {
         <button className="modal-close" type="button" aria-label="关闭规则说明" onClick={onClose}>×</button>
         <span className="eyebrow">酒馆规则</span>
         <h2 id="rules-heading" tabIndex={-1} data-autofocus>如何赢下这局</h2>
-        <p className="settings-intro">选择本次新投出的计分骰，决定继续冒险或保存分数。率先达到目标分的一方获胜。</p>
+        <p className="settings-intro">选择本次新投出的计分骰，决定继续冒险或保存分数。率先达到目标分的一方获胜。下列为基础分，核心的收益与代价会在计分明细中展开。</p>
 
         <div className="rules-grid">
           <article className="rules-card">
@@ -54,11 +54,14 @@ export function RulesModal({ onClose }: RulesModalProps) {
             <h3>徽章</h3>
             <ul className="rules-modifiers">
               {MODIFIERS.map((modifier) => (
-                <li key={modifier.id}><span aria-hidden="true">{modifier.symbol}</span><div><strong>{modifier.name}</strong><p>{modifier.description}</p></div></li>
+                <li key={modifier.id}><span aria-hidden="true">{modifier.symbol}</span><div><strong>{modifier.name}{modifier.adventureOnly ? ' · 酒馆之夜核心' : ''}</strong><p>{modifier.description}</p></div></li>
               ))}
             </ul>
           </article>
         </div>
+
+        <p>酒馆之夜每桌入座前可整理六颗骰子和至多两枚徽章，其中核心最多一枚。奖励与换下物品保留在本夜行囊；首次失利在原桌重试，累计两败结束当夜。</p>
+        <p>黄金一点先选一颗新投出的骰子；孤注一掷使用后，选择与骰值锁定。失焦、隐藏窗口或打开面板会暂停对局，返回后需点击“继续”。</p>
 
         <button className="primary-action rules-close-action" type="button" onClick={onClose}>明白了</button>
       </section>

@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import type { Group } from 'three'
 import type { OpponentDefinition } from '../game/opponents'
 import type { GameState } from '../game/types'
+import type { GamePlayback } from '../presentation/GamePlayback'
 
 function Form({ position, scale, color, rotation = [0, 0, 0], shape = 'sphere' }: {
   position: [number, number, number]; scale: [number, number, number]; color: string
@@ -16,13 +17,15 @@ function Form({ position, scale, color, rotation = [0, 0, 0], shape = 'sphere' }
 }
 
 /** Original modular half-body characters, built entirely from local geometry. */
-export function TavernCharacter({ opponent: o, state, reduced }: { opponent: OpponentDefinition; state: GameState; reduced: boolean }) {
+export function TavernCharacter({ opponent: o, state, reduced, playback }: { opponent: OpponentDefinition; state: GameState; reduced: boolean; playback: GamePlayback }) {
   const body = useRef<Group>(null)
   const head = useRef<Group>(null)
   const arm = useRef<Group>(null)
   const eyes = useRef<Group>(null)
   const settling = useRef(0)
-  useFrame(({ clock, invalidate }, delta) => {
+  useFrame(({ invalidate }, frameDelta) => {
+    if (playback.paused) return
+    const delta = Math.min(frameDelta, 0.05)
     const ai = state.currentPlayer === 'ai'
     const bust = state.phase === 'bust'
     const lean = ai && o.difficulty === 'aggressive' ? 0.12 : bust ? -0.12 : 0
@@ -33,7 +36,7 @@ export function TavernCharacter({ opponent: o, state, reduced }: { opponent: Opp
     if (head.current) head.current.rotation.z = bust ? (o.id === 'rue' ? -0.18 : 0.12) : 0
     if (arm.current) {
       const gesture = ai && ['rolling', 'ai_thinking'].includes(state.phase)
-      const target = gesture && !reduced ? Math.sin(clock.elapsedTime * (o.id === 'mara' ? 4 : 2)) * 0.11 : 0
+      const target = gesture && !reduced ? Math.sin(playback.now() / 1000 * (o.id === 'mara' ? 4 : 2)) * 0.11 : 0
       arm.current.rotation.z += (target - arm.current.rotation.z) * (reduced ? 1 : Math.min(1, delta * 9))
       if (gesture && !reduced) invalidate()
     }

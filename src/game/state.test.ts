@@ -91,7 +91,7 @@ describe('gameReducer', () => {
 
   it('applies active abilities through reducer events', () => {
     const initial = {
-      ...createInitialState(),
+      ...createInitialState(settings({ modifierIds: ['golden-one', 'double-down'] })),
       phase: 'selecting' as const,
       rolledDice: [die('chosen', 6, true)],
     }

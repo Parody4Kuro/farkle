@@ -8,7 +8,7 @@ function createFakeContext(): AudioContext {
     setTargetAtTime: vi.fn(),
     exponentialRampToValueAtTime: vi.fn(),
   }
-  const node = () => ({ connect: vi.fn() })
+  const node = () => ({ connect: vi.fn(), disconnect: vi.fn() })
   return {
     state: 'running',
     currentTime: 0,
@@ -25,7 +25,7 @@ function createFakeContext(): AudioContext {
     createBuffer: (_channels: number, frameCount: number) => ({
       getChannelData: () => new Float32Array(frameCount),
     }),
-    createBufferSource: () => ({ ...node(), buffer: null, start: vi.fn() }),
+    createBufferSource: () => ({ ...node(), buffer: null, start: vi.fn(), stop: vi.fn() }),
     createBiquadFilter: () => ({
       ...node(),
       type: 'bandpass',
@@ -86,5 +86,38 @@ describe('WebGameAudio', () => {
 
     unavailable.setVolume(Number.NaN)
     expect(unavailable.getPreferences().volume).toBe(0.6)
+  })
+
+  it('stops queued sounds and ambience on pause, ignores preference unlocks, and resumes without replaying old cues', async () => {
+    vi.useFakeTimers()
+    try {
+      const context = createFakeContext()
+      const oscillator = vi.spyOn(context, 'createOscillator')
+      const source = vi.spyOn(context, 'createBufferSource')
+      const audio = new WebGameAudio({ enabled: true, volume: .6 }, () => context)
+      audio.setAmbience(.3, .2, 3)
+      await audio.unlock()
+      audio.play('victory')
+      audio.play('roll')
+      const tones = oscillator.mock.calls.length, noises = source.mock.calls.length
+      audio.setPaused(true)
+      for (const result of [...oscillator.mock.results, ...source.mock.results]) expect(result.value.stop).toHaveBeenCalled()
+      audio.setEnabled(true)
+      audio.setAmbience(.4, .3, 4)
+      expect(await audio.unlock()).toBe(false)
+      expect(audio.play('bank')).toBe(false)
+      expect(audio.playImpact?.(1)).toBe(false)
+      await vi.advanceTimersByTimeAsync(10000)
+      expect(oscillator).toHaveBeenCalledTimes(tones)
+      expect(source).toHaveBeenCalledTimes(noises)
+      audio.setPaused(false)
+      expect(oscillator).toHaveBeenCalledTimes(tones)
+      await audio.unlock()
+      expect(oscillator).toHaveBeenCalledTimes(tones)
+      await vi.advanceTimersByTimeAsync(900)
+      expect(oscillator.mock.calls.length).toBeGreaterThan(tones)
+      await audio.dispose()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally { vi.useRealTimers() }
   })
 })

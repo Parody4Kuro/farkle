@@ -55,10 +55,12 @@ function showGame() {
   window.webContents.on('will-attach-webview', (event) => event.preventDefault())
   const publishVisibility = () => {
     const visible = window.isVisible() && !window.isMinimized()
-    window.webContents.setAudioMuted(!visible)
+    const focused = window.isFocused()
+    window.webContents.setAudioMuted(!visible || !focused)
     window.webContents.send('tavern:visibility', visible)
+    window.webContents.send('tavern:focus', focused)
   }
-  for (const event of ['minimize', 'restore', 'hide', 'show']) window.on(event, publishVisibility)
+  for (const event of ['minimize', 'restore', 'hide', 'show', 'focus', 'blur']) window.on(event, publishVisibility)
   window.webContents.on('did-finish-load', publishVisibility)
   window.on('close', () => { session.defaultSession.flushStorageData() })
   window.on('closed', () => { mainWindow = null })

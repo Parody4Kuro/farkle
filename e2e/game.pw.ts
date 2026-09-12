@@ -126,7 +126,7 @@ test('context loss during a roll releases the wait and retains its result', asyn
   await expect(page.getByRole('button', { name: /骰子点数 1，公平骰/ })).toHaveCount(6)
 })
 
-test('returning from a hidden page shows landed dice and allows banking', async ({ page }, info) => {
+test('hidden-page pauses preserve the physical roll and require manual Continue', async ({ page }, info) => {
   await openGame(page)
   await start(page)
   await page.getByRole('button', { name: /掷骰子/ }).click()
@@ -136,11 +136,17 @@ test('returning from a hidden page shows landed dice and allows banking', async 
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
     document.dispatchEvent(new Event('visibilitychange'))
   })
-  await expect(page.locator('button.dice-hit')).toHaveCount(6)
+  await expect(page.getByRole('dialog', { name: '对局已暂停' })).toBeVisible()
+  await page.waitForTimeout(6500)
+  await expect(page.locator('.game-shell')).toHaveClass(/phase-rolling/)
+  await expect(page.locator('button.dice-hit')).toHaveCount(0)
   await page.evaluate(() => {
     Reflect.deleteProperty(document, 'hidden')
     document.dispatchEvent(new Event('visibilitychange'))
   })
+  await expect(page.getByRole('dialog', { name: '对局已暂停' })).toBeVisible()
+  await page.getByRole('button', { name: '继续', exact: true }).click()
+  await expect(page.locator('button.dice-hit')).toHaveCount(6)
   await page.locator('button.dice-hit').first().focus()
   await page.keyboard.press('Space')
   await page.screenshot({ path: info.outputPath('resumed.png') })

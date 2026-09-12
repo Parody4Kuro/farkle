@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest'
-import { isGameHidden, onGameVisibilityChange } from './visibility'
+import { bindGamePlayback, isGameHidden, onGameVisibilityChange } from './visibility'
+import { GamePlayback } from '../presentation/GamePlayback'
 
 afterEach(() => { delete window.tavernDesktop; vi.restoreAllMocks() })
 
@@ -41,4 +42,30 @@ it('treats native minimization as hidden and resumes only when both sources are 
   expect(callback).toHaveBeenCalledTimes(2)
   dispose()
   expect(unsubscribe).toHaveBeenCalledOnce()
+})
+
+it('combines browser focus, native focus and visibility without automatically continuing', () => {
+  vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+  vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+  let focused = true, notify = () => {}
+  const disposeNative = vi.fn()
+  window.tavernDesktop = { isVisible: () => true, onVisibilityChange: () => () => {},
+    isFocused: () => focused, onFocusChange: (callback) => { notify = callback; return disposeNative } }
+  const playback = new GamePlayback()
+  playback.setActive(true)
+  const stop = bindGamePlayback(playback)
+  window.dispatchEvent(new Event('blur'))
+  expect(playback.paused).toBe(true)
+  focused = false; notify()
+  window.dispatchEvent(new Event('focus'))
+  expect(playback.resume()).toBe(false)
+  focused = true; notify()
+  expect(playback.getSnapshot().canResume).toBe(true)
+  expect(playback.paused).toBe(true)
+  playback.resume()
+  expect(playback.paused).toBe(false)
+  stop()
+  expect(disposeNative).toHaveBeenCalledOnce()
+  window.dispatchEvent(new Event('blur'))
+  expect(playback.paused).toBe(false)
 })

@@ -1,4 +1,5 @@
-import { JOKER, type DiceValue, type DieFace, type ScoreGroup, type ScoreResult, type SelectionValidation } from './types'
+import { applyGroupModifiers } from './modifiers'
+import { JOKER, type DiceValue, type DieFace, type ScoreGroup, type ScoreResult, type SelectionValidation, type ScoringContext } from './types'
 
 interface SearchResult {
   score: number
@@ -125,9 +126,9 @@ function kindFace(group: ScoreGroup): DieFace | undefined {
   return group.jokerAs?.[0] ?? (group.values.find((value): value is DieFace => value !== JOKER))
 }
 
-function searchBest(dice: DiceValue[], requireAll: boolean): SearchResult {
+function searchBest(dice: DiceValue[], requireAll: boolean, context?: ScoringContext): SearchResult {
   const groups = enumerateScoringGroups(dice).map((group) => ({
-    ...group,
+    ...applyGroupModifiers(group, context),
     mask: group.dieIndices.reduce((mask, index) => mask | (1 << index), 0),
   }))
   const fullMask = (1 << dice.length) - 1
@@ -165,8 +166,8 @@ function searchBest(dice: DiceValue[], requireAll: boolean): SearchResult {
   return visit(0) ?? { score: 0, groups: [], usedMask: 0 }
 }
 
-export function calculateBestScore(dice: DiceValue[]): ScoreResult {
-  const result = searchBest(dice, false)
+export function calculateBestScore(dice: DiceValue[], context?: ScoringContext): ScoreResult {
+  const result = searchBest(dice, false, context)
   const unusedIndices = dice.map((_, index) => index).filter((index) => !(result.usedMask & (1 << index)))
   return {
     score: result.score,
@@ -178,18 +179,18 @@ export function calculateBestScore(dice: DiceValue[]): ScoreResult {
 
 export const calculateScore = calculateBestScore
 
-export function validateSelectedDice(dice: DiceValue[]): SelectionValidation {
+export function validateSelectedDice(dice: DiceValue[], context?: ScoringContext): SelectionValidation {
   if (dice.length === 0) {
     return { valid: false, score: 0, groups: [], unusedDice: [], unusedIndices: [] }
   }
 
-  const result = searchBest(dice, true)
+  const result = searchBest(dice, true, context)
   const allUsed = result.usedMask === (1 << dice.length) - 1 && result.score > 0
   if (allUsed) {
     return { valid: true, score: result.score, groups: result.groups, unusedDice: [], unusedIndices: [] }
   }
 
-  return { valid: false, ...calculateBestScore(dice) }
+  return { valid: false, ...calculateBestScore(dice, context) }
 }
 
 export function hasAnyScore(dice: DiceValue[]): boolean {

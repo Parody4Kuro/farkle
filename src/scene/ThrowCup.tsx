@@ -12,15 +12,15 @@ export function ThrowCup({ art, presentation, reduced, hands = false, moon = fal
   const origin = useRef(new Vector3(-6.15, 0.61, 0.1))
   const target = useRef(new Vector3())
   const started = useRef({ id: -1, time: 0 })
-  useFrame(({ clock }, delta) => {
-    if (!ref.current) return
+  useFrame((_state, delta) => {
+    if (!ref.current || presentation.playback.paused) return
     const roll = presentation.getSnapshot()
-    if (roll && roll.id !== started.current.id) started.current = { id: roll.id, time: clock.elapsedTime }
-    const elapsed = clock.elapsedTime - started.current.time
+    if (roll && roll.id !== started.current.id) started.current = { id: roll.id, time: presentation.playback.now() / 1000 }
+    const elapsed = presentation.playback.now() / 1000 - started.current.time
     const tossing = Boolean(roll) && (!hands || roll?.player === 'human') && !reduced && elapsed < 0.8
     const lift = tossing ? Math.sin(Math.min(1, elapsed / 0.8) * Math.PI) : 0
     target.current.set(origin.current.x + lift * 3.7, origin.current.y + lift * 2.5, origin.current.z - lift * 0.8)
-    ref.current.position.lerp(target.current, reduced ? 1 : 1 - Math.exp(-delta * 20))
+    ref.current.position.lerp(target.current, reduced ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * 20))
     ref.current.rotation.z = -0.12 - lift * 1.5
     ref.current.rotation.x = -lift * 0.3
     if (tossing || ref.current.position.distanceTo(target.current) > 0.002) invalidate()

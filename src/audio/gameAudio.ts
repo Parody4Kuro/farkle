@@ -32,6 +32,7 @@ export interface GameAudio {
   play(cue: SoundCue): boolean
   playImpact?(strength: number): boolean
   setAmbience?(environment: number, music: number, tension: number): void
+  setPaused?(paused: boolean): void
   setEnabled(enabled: boolean): void
   setVolume(volume: number): void
   suspend(): Promise<void>
@@ -46,6 +47,8 @@ export class WebGameAudio implements GameAudio {
   private ambience = { environment: 0, music: 0, tension: 0 }
   private ambienceTimer?: ReturnType<typeof setInterval>
   private beat = 0
+  private paused = false
+  private sources = new Set<AudioScheduledSourceNode>()
   private preferences: AudioPreferences
   private readonly createContext: AudioContextFactory
 
@@ -56,6 +59,12 @@ export class WebGameAudio implements GameAudio {
 
   getPreferences(): AudioPreferences {
     return { ...this.preferences }
+  }
+
+  setPaused(paused: boolean): void {
+    if (this.paused === paused) return
+    this.paused = paused
+    if (paused) void this.suspend()
   }
 
   setEnabled(enabled: boolean): void {
@@ -73,10 +82,11 @@ export class WebGameAudio implements GameAudio {
   }
 
   async unlock(): Promise<boolean> {
-    if (!this.preferences.enabled) return false
+    if (this.paused || !this.preferences.enabled) return false
     try {
       this.ensureContext()
       if (this.context?.state === 'suspended') await this.context.resume()
+      if (this.paused) { await this.suspend(); return false }
       if (this.context?.state === 'running') this.startAmbience()
       return this.context?.state === 'running'
     } catch {
@@ -85,7 +95,7 @@ export class WebGameAudio implements GameAudio {
   }
 
   play(cue: SoundCue): boolean {
-    if (!this.preferences.enabled) return false
+    if (this.paused || !this.preferences.enabled) return false
     try {
       const context = this.ensureContext()
       if (context.state === 'suspended') void context.resume()
@@ -98,7 +108,7 @@ export class WebGameAudio implements GameAudio {
 
   playImpact(strength: number): boolean {
     // Collisions never create/unlock an AudioContext without a user gesture.
-    if (!this.preferences.enabled || this.context?.state !== 'running') return false
+    if (this.paused || !this.preferences.enabled || this.context?.state !== 'running') return false
     const now = this.context.currentTime
     if (now - this.lastImpact < 0.055) return false
     this.lastImpact = now
@@ -112,6 +122,7 @@ export class WebGameAudio implements GameAudio {
 
   async suspend(): Promise<void> {
     this.stopAmbience()
+    this.stopSources()
     try {
       if (this.context?.state === 'running') await this.context.suspend()
     } catch {
@@ -121,6 +132,7 @@ export class WebGameAudio implements GameAudio {
 
   async dispose(): Promise<void> {
     this.stopAmbience()
+    this.stopSources()
     try {
       if (this.context && this.context.state !== 'closed') await this.context.close()
     } catch {
@@ -147,9 +159,9 @@ export class WebGameAudio implements GameAudio {
   }
 
   private startAmbience(): void {
-    if (this.ambienceTimer !== undefined || (!this.ambience.environment && !this.ambience.music)) return
+    if (this.paused || this.ambienceTimer !== undefined || (!this.ambience.environment && !this.ambience.music)) return
     this.ambienceTimer = setInterval(() => {
-      if (this.context?.state !== 'running' || !this.preferences.enabled) return
+      if (this.paused || this.context?.state !== 'running' || !this.preferences.enabled) return
       try {
         const start = this.context.currentTime + 0.015
         const { environment, music, tension } = this.ambience
@@ -179,6 +191,18 @@ export class WebGameAudio implements GameAudio {
     return this.context
   }
 
+  private track(source: AudioScheduledSourceNode): void {
+    this.sources.add(source)
+    source.onended = () => { this.sources.delete(source); source.disconnect() }
+  }
+
+  private stopSources(): void {
+    for (const source of this.sources) {
+      try { source.stop(); source.disconnect() } catch { /* already ended */ }
+    }
+    this.sources.clear()
+  }
+
   private tone(
     start: number,
     frequency: number,
@@ -198,6 +222,7 @@ export class WebGameAudio implements GameAudio {
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
     oscillator.connect(gain)
     gain.connect(this.master)
+    this.track(oscillator)
     oscillator.start(start)
     oscillator.stop(start + duration + 0.02)
   }
@@ -223,6 +248,7 @@ export class WebGameAudio implements GameAudio {
     source.connect(filter)
     filter.connect(gain)
     gain.connect(this.master)
+    this.track(source)
     source.start(start)
   }
 
