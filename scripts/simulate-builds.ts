@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 import { adventureReducer, createAdventure, ORIGINS, type AdventureAction, type AdventureRun } from '../src/game/adventure'
-import { CORE_IDS, CORE_MODIFIERS, SCORING_VERSION } from '../src/game/cores'
+import { CORE_IDS, getCoreModifiers, SCORING_VERSION } from '../src/game/cores'
+import { isScoringVersion } from '../src/game/scoringVersions'
 import { calculateBestScore } from '../src/game/scoring'
 import { shouldAiContinue } from '../src/game/ai'
 import { addInventoryItem, loadoutError } from '../src/game/inventory'
@@ -16,17 +17,19 @@ const samples = Number(process.argv[2] ?? 60)
 assert(Number.isInteger(samples) && samples >= 1 && samples <= 1000, 'sample count must be 1–1000')
 const seedBase = Number(process.argv[3] ?? 18017)
 assert(Number.isInteger(seedBase) && seedBase > 0 && seedBase < 0xffffffff)
-const outputPath = process.argv[4] ?? 'docs/build-simulation.json'
+const scoringVersion = Number(process.argv[6] ?? SCORING_VERSION)
+assert(isScoringVersion(scoringVersion), 'scoring version must be 1 or 2')
+const outputPath = process.argv[4] ?? `docs/build-simulation-v${scoringVersion}.json`
 const styles = (process.argv[5] ?? 'normal,aggressive').split(',') as AiDifficulty[]
 assert(styles.length > 0 && styles.every((style) => ['conservative', 'normal', 'aggressive'].includes(style)))
 const seeds = Array.from({ length: samples }, (_, i) => seedBase + i * 7919)
 const cache = new Map<string, ScoreResult>()
-function best(values: DiceValue[], modifiers: string[]) {
+function best(values: DiceValue[], modifiers: string[], version: number) {
   const order = values.map((value, index) => ({ value, index })).sort((a, b) => String(a.value).localeCompare(String(b.value)))
-  const key = `${modifiers.join(',')}:${order.map((d) => d.value).join(',')}`
+  const key = `${version}:${modifiers.join(',')}:${order.map((d) => d.value).join(',')}`
   let result = cache.get(key)
   if (!result) {
-    result = calculateBestScore(order.map((d) => d.value), { modifierIds: modifiers, player: 'human', version: SCORING_VERSION })
+    result = calculateBestScore(order.map((d) => d.value), { modifierIds: modifiers, player: 'human', version })
     cache.set(key, result)
   }
   return { score: result.score, indices: [...new Set(result.groups.flatMap((g) => g.dieIndices.map((i) => order[i].index)))].sort((a, b) => a - b),
@@ -49,6 +52,8 @@ function action(run: AdventureRun, input: AdventureAction, measure: Metrics, aud
     assert(restored, `Invalid serialized state: ${next.stage}/${next.flow}`)
     assert.equal(restored.rng, next.rng)
     assert.equal(restored.rewardRng, next.rewardRng)
+    assert.equal(restored.scoringVersion, next.scoringVersion)
+    assert.equal(restored.game.config.scoringVersion, next.game.config.scoringVersion)
     assert.deepEqual(restored.pendingDice, next.pendingDice)
     assert.equal(loadoutError(restored.inventory, restored.loadout, restored.modifiers), null)
   }
@@ -57,12 +62,13 @@ function action(run: AdventureRun, input: AdventureAction, measure: Metrics, aud
 
 function playSelection(run: AdventureRun, style: AiDifficulty, measure: Metrics, audit: boolean) {
   const mods = run.modifiers
+  const version = run.scoringVersion
   const apply = (input: AdventureAction) => { run = action(run, input, measure, audit) }
   const gold = getModifier('golden-one')!
   if (mods.includes(gold.id) && canUseModifier(gold, run.game.modifierUsage)) {
     const values = run.game.rolledDice.map((d) => d.value)
-    const original = best(values, mods)
-    const options = values.map((value, i) => ({ i, score: value === 1 ? original.score : best(values.map((v, j) => j === i ? 1 : v), mods).score }))
+    const original = best(values, mods, version)
+    const options = values.map((value, i) => ({ i, score: value === 1 ? original.score : best(values.map((v, j) => j === i ? 1 : v), mods, version).score }))
     const upgrade = options.sort((a, b) => b.score - a.score)[0]
     if (upgrade.score > original.score) {
       apply({ type: 'TOGGLE', id: run.game.rolledDice[upgrade.i].id })
@@ -70,7 +76,7 @@ function playSelection(run: AdventureRun, style: AiDifficulty, measure: Metrics,
     }
   }
   const values = run.game.rolledDice.map((d) => d.value)
-  const choice = best(values, mods), base = best(values, [])
+  const choice = best(values, mods, version), base = best(values, [], version)
   measure.selections++
   if (JSON.stringify(choice.indices) !== JSON.stringify(base.indices) || JSON.stringify(choice.kinds) !== JSON.stringify(base.kinds)) measure.changedSelections++
   for (const kind of choice.kinds) measure[kind === 'single' ? 'singles' : kind === 'kind' ? 'kinds' : 'straights']++
@@ -139,8 +145,12 @@ function summarize(rows: Played[]) {
 }
 
 const nights = []
+function simulationRun(seed: number, id: string, origin: string): AdventureRun {
+  const run = createAdventure(seed, id, origin)
+  return { ...run, scoringVersion, game: { ...run.game, config: { ...run.game.config, scoringVersion } } }
+}
 for (const origin of ORIGINS) for (const core of CORE_IDS) {
-  const played = seeds.map((seed, i) => play(createAdventure(seed, `night:${origin.id}:${core}:${seed}`, origin.id), core, 'normal', true, i === 0))
+  const played = seeds.map((seed, i) => play(simulationRun(seed, `night:${origin.id}:${core}:${seed}`, origin.id), core, 'normal', true, i === 0))
   nights.push({ origin: origin.id, core, ...summarize(played), samplePath: played[0] })
   console.log('night', origin.id, core, summarize(played))
 }
@@ -158,7 +168,7 @@ for (const profile of profiles) for (const style of styles) for (const modifiers
   if (profile.table === 0 && modifiers.length > 1) continue
   const played = seeds.map((seed, i) => {
     const core = modifiers.find((id) => CORE_IDS.includes(id)) ?? CORE_IDS[0]
-    let run = adventureReducer(createAdventure(seed, `duel:${profile.id}:${seed}`, profile.origin), { type: 'SELECT_CORE', id: core })
+    let run = adventureReducer(simulationRun(seed, `duel:${profile.id}:${seed}`, profile.origin), { type: 'SELECT_CORE', id: core })
     run = { ...run, table: profile.table, modifiers, loadout: [...run.loadout] }
     for (const id of modifiers) run = { ...run, inventory: addInventoryItem(run.inventory, 'modifier', id) }
     for (const id of profile.rewardDice) {
@@ -172,7 +182,8 @@ for (const profile of profiles) for (const style of styles) for (const modifiers
 }
 const evidence = {
   protocol: 'Heuristic simulation v1; shared pure reducer, weighted RNG, adjusted DFS; each row reuses the same starting seed list, then actions may consume different streams.',
-  scoringVersion: SCORING_VERSION, cores: CORE_MODIFIERS.map(({ id, benefit, cost }) => ({ id, benefit, cost })),
+  scoringVersion, inventoryPolicy: 'Six baseline fair dice for both scoring versions.',
+  cores: getCoreModifiers(scoringVersion).map(({ id, benefit, cost }) => ({ id, benefit, cost })),
   samplesPerRow: samples, seedBase, seedStride: 7919,
   limitations: ['No timing or human preference model.', 'Risk policies are heuristics, not optimal play.',
     'Boss rows compare reachable equipment counterfactuals, not the probability of drawing those rewards.',

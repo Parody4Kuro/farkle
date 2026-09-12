@@ -1,4 +1,4 @@
-import { applyGroupModifiers } from './modifiers'
+import { applyGroupModifiers, getSingleDiceLimit } from './modifiers'
 import { JOKER, type DiceValue, type DieFace, type ScoreGroup, type ScoreResult, type SelectionValidation, type ScoringContext } from './types'
 
 interface SearchResult {
@@ -127,6 +127,7 @@ function kindFace(group: ScoreGroup): DieFace | undefined {
 }
 
 function searchBest(dice: DiceValue[], requireAll: boolean, context?: ScoringContext): SearchResult {
+  const singleLimit = getSingleDiceLimit(context)
   const groups = enumerateScoringGroups(dice).map((group) => ({
     ...applyGroupModifiers(group, context),
     mask: group.dieIndices.reduce((mask, index) => mask | (1 << index), 0),
@@ -134,8 +135,10 @@ function searchBest(dice: DiceValue[], requireAll: boolean, context?: ScoringCon
   const fullMask = (1 << dice.length) - 1
   const memo = new Map<string, SearchResult | null>()
 
-  const visit = (usedMask: number, usedKindFaces = 0): SearchResult | null => {
-    const memoKey = `${usedMask}:${usedKindFaces}`
+  const visit = (usedMask: number, usedKindFaces = 0, singleCounts = [0, 0, 0, 0, 0, 0]): SearchResult | null => {
+    // The same used dice can have been consumed by singles or by a straight.
+    // Remaining single allowances therefore belong in the memo key.
+    const memoKey = `${usedMask}:${usedKindFaces}:${singleLimit < Infinity ? singleCounts.join(',') : ''}`
     const cached = memo.get(memoKey)
     if (cached !== undefined) return cached
 
@@ -148,7 +151,14 @@ function searchBest(dice: DiceValue[], requireAll: boolean, context?: ScoringCon
       const face = kindFace(group)
       const faceBit = face ? 1 << face : 0
       if (faceBit && usedKindFaces & faceBit) continue
-      const next = visit(usedMask | group.mask, usedKindFaces | faceBit)
+      let nextSingles = singleCounts
+      if (group.kind === 'single' && singleLimit < Infinity) {
+        const singleFace = group.values[0] as DieFace
+        if (singleCounts[singleFace - 1] >= singleLimit) continue
+        nextSingles = [...singleCounts]
+        nextSingles[singleFace - 1] += 1
+      }
+      const next = visit(usedMask | group.mask, usedKindFaces | faceBit, nextSingles)
       if (!next) continue
       const { mask: _mask, ...plainGroup } = group
       const candidate: SearchResult = {

@@ -4,6 +4,7 @@ import { createInitialState } from './rules'
 import { normalizeAdventure, recordAdventure, EMPTY_PROFILE } from '../storage/adventureStorage'
 import type { DiceValue } from './types'
 import { addInventoryItem, createInventory } from './inventory'
+import { evaluateSelection } from './selection'
 
 function opened(seed: number, id: string) { return reduce(createAdventure(seed, id), { type: 'SELECT_CORE', id: 'core-steady' }) }
 function bare(seed: number, id: string): AdventureRun { const run = opened(seed, id); return { ...run, modifiers: [] } }
@@ -19,6 +20,37 @@ function lose(run: AdventureRun) {
 }
 
 describe('four tables adventure', () => {
+  it('locks new ledger scores, keeps later singles separate, and loses the whole hot turn on bust', () => {
+    let run = reduce(opened(41, 'ledger'), { type: 'SIT' })
+    run = selected(run, [1, 1, 1, 2], 300)
+    run.game = { ...run.game, scores: { human: 250, ai: 100 },
+      rolledDice: run.game.rolledDice.map((die) => ({ ...die, selected: die.value === 1 })) }
+    expect(evaluateSelection(run.game)).toMatchObject({ score: 500, bankTotal: 800 })
+    run = reduce(run, { type: 'ROLL' })
+    expect(run.game.turnScore).toBe(800)
+    expect(run.game.lockedDice).toHaveLength(3)
+    expect(run.pendingDice).toHaveLength(1)
+    run = reduce({ ...run, pendingDice: run.pendingDice.map((die) => ({ ...die, value: 1 })) }, { type: 'ROLL_FINISHED' })
+    run = reduce(run, { type: 'TOGGLE', id: run.game.rolledDice[0].id })
+    expect(evaluateSelection(run.game)).toMatchObject({ score: 200, bankTotal: 1000 })
+    expect(reduce(run, { type: 'BANK' }).game.scores.human).toBe(1250)
+    run = reduce(run, { type: 'ROLL' })
+    expect(run.lastEvent).toMatchObject({ type: 'LOCK_SELECTION', hotDice: true, score: 200 })
+    expect(run.game.turnScore).toBe(1000)
+    expect(run.pendingDice).toHaveLength(6)
+    run = reduce({ ...run, pendingDice: run.pendingDice.map((die, i) => ({ ...die, value: ([2, 3, 4, 6, 2, 3] as const)[i] })) }, { type: 'ROLL_FINISHED' })
+    expect(run.flow).toBe('bust')
+    expect(run.game.turnScore).toBe(0)
+    expect(run.game.scores.human).toBe(250)
+  })
+
+  it('retains old scoring when retrying a lost table', () => {
+    const old = { ...opened(41, 'old-retry'), scoringVersion: 1 as const }
+    const lost = lose(reduce(old, { type: 'SIT' }))
+    const retry = reduce(lost, { type: 'SIT' })
+    expect(retry.game.config.scoringVersion).toBe(1)
+    expect(evaluateSelection(selected(retry, [1, 1, 1]).game).score).toBe(600)
+  })
   it('offers one persistent choice per ordinary victory and ends at the boss', () => {
     let run = opened(27, 'test')
     for (let table = 0; table < 3; table++) {

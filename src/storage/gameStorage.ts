@@ -2,6 +2,7 @@ import { DEFAULT_LOADOUT, DIE_DEFINITIONS } from '../game/dice'
 import { MODIFIERS } from '../game/modifiers'
 import { DEFAULT_GAME_SETTINGS, TARGET_SCORE_OPTIONS } from '../game/rules'
 import type { AiDifficulty, AudioPreferences, GameSettings, GameStats } from '../game/types'
+import { isScoringVersion } from '../game/scoringVersions'
 
 export const SETTINGS_KEY = 'tavern-bones-settings-v1'
 export const STATS_KEY = 'tavern-bones-stats-v1'
@@ -59,7 +60,7 @@ export function normalizeSettings(value: unknown, mode: 'classic' | 'adventure' 
   const storedModifiers = Array.isArray(value.modifierIds) ? value.modifierIds : []
 
   return {
-    ...(value.scoringVersion === 1 ? { scoringVersion: 1 } : {}),
+    ...(isScoringVersion(value.scoringVersion) ? { scoringVersion: value.scoringVersion } : {}),
     targetScore: TARGET_SCORE_OPTIONS.includes(value.targetScore as typeof TARGET_SCORE_OPTIONS[number])
       ? value.targetScore as number
       : DEFAULT_GAME_SETTINGS.targetScore,

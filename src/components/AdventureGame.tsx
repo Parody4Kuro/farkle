@@ -29,12 +29,12 @@ function RewardChoice({ run, onPick, onSkip }: { run: AdventureRun; onPick: (rew
     <h2 id="reward-title" ref={heading} tabIndex={-1}>赢来的，选一件带走。</h2>
     <p>选择的物品会加入本夜行囊。已有装备全部保留，下一桌入座前再决定如何搭配。</p>
     <div className="reward-grid">{run.rewards.map((reward) => {
-      const item = reward.kind === 'die' ? getDieDefinition(reward.definitionId) : getModifier(reward.definitionId)!
+      const item = reward.kind === 'die' ? getDieDefinition(reward.definitionId) : getModifier(reward.definitionId, run.scoringVersion)!
       return <button key={reward.id} className={`loot-card ${chosen?.id === reward.id ? 'chosen' : ''}`} aria-pressed={chosen?.id === reward.id}
-        onClick={() => setChosen(reward)}><span className="loot-art" aria-hidden="true">{reward.kind === 'die' ? '⚄' : getModifier(reward.definitionId)!.symbol}</span>
+        onClick={() => setChosen(reward)}><span className="loot-art" aria-hidden="true">{reward.kind === 'die' ? '⚄' : getModifier(reward.definitionId, run.scoringVersion)!.symbol}</span>
         <small>{reward.kind === 'die' ? '一颗特殊骰' : '一枚徽章'}</small><strong>{item.name}</strong><p>{item.description}</p></button>
     })}</div>
-    {chosen && <button className="night-primary" onClick={() => onPick(chosen)}>收入行囊：{chosen.kind === 'die' ? getDieDefinition(chosen.definitionId).name : getModifier(chosen.definitionId)!.name}</button>}
+    {chosen && <button className="night-primary" onClick={() => onPick(chosen)}>收入行囊：{chosen.kind === 'die' ? getDieDefinition(chosen.definitionId).name : getModifier(chosen.definitionId, run.scoringVersion)!.name}</button>}
     <button className="night-text" onClick={onSkip}>放弃这次奖励，前往下一桌 →</button>
   </section>
 }
@@ -112,7 +112,7 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
         canBank={choice.valid} abilities={getActiveModifiers(game.config.modifierIds)} modifierUsage={game.modifierUsage} abilityDisabledReasons={abilityReasons(game)} paused={paused}
         onRoll={() => act({ type: 'ROLL' })} onBank={() => act({ type: 'BANK' })} onUseModifier={(id) => act({ type: 'ABILITY', id })} /></div>
     </section>}
-    {run.stage === 'core' && <div className="night-overlay"><CoreChoice offers={run.opening.offers} onChoose={(id) => act({ type: 'SELECT_CORE', id })} /></div>}
+    {run.stage === 'core' && <div className="night-overlay"><CoreChoice scoringVersion={run.scoringVersion} offers={run.opening.offers} onChoose={(id) => act({ type: 'SELECT_CORE', id })} /></div>}
     {run.stage === 'reward' && <div className="night-overlay"><RewardChoice key={run.table} run={run} onPick={(reward) => act({ type: 'REWARD', id: reward.id, offerId: run.rewardOfferId! })} onSkip={() => act({ type: 'SKIP_REWARD', offerId: run.rewardOfferId! })} /></div>}
     {finished && <div className="night-overlay"><section className="night-panel result-night">
       <span className="eyebrow">{run.stage === 'won' ? 'A NIGHT TO REMEMBER' : 'THE FIRE IS STILL WARM'}</span>
@@ -120,12 +120,12 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
       <p>{run.stage === 'won' ? '老板为你留了一张熟客的椅子。夜行旅人与月下骰盅已经解锁。' : '累计两次失利，这次旅程结束。商路旧识已经解锁，下次可以试试另一套起手。'}</p>
       <div className="night-recap"><div><span>最大成功落袋</span><strong>{run.peak.toLocaleString()}</strong></div><div><span>最冒险的一次失手</span><strong>{run.largestBust.toLocaleString()}</strong></div><div><span>完成对局</span><strong>{run.history.length}</strong></div></div>
       <ol className="night-history">{run.history.map((h, i) => <li key={i}><span>{opponentAt(h.table).seat} · 第 {h.attempt} 次挑战 · {opponentAt(h.table).name}</span><b>{h.winner === 'human' ? '胜' : '负'}</b><span>{h.humanScore} : {h.aiScore}</span></li>)}</ol>
-      <p>本夜骰组：{run.loadout.map((id) => getDieDefinition(id).name).join(' · ')}</p><p>随身徽章：{run.modifiers.map((id) => getModifier(id)?.name).join(' · ') || '无'}</p>
+      <p>本夜骰组：{run.loadout.map((id) => getDieDefinition(id).name).join(' · ')}</p><p>随身徽章：{run.modifiers.map((id) => getModifier(id, run.scoringVersion)?.name).join(' · ') || '无'}</p>
       <button className="night-primary" onClick={leave}>收起行囊，回到酒馆 →</button>
     </section></div>}
-    <footer className="night-footer"><span>失利 {run.losses} / 2</span><details className="pack-details"><summary>本夜行囊 · {Object.values(run.inventory.dice).reduce((n, count) => n + count, 0)} 颗骰子</summary><ul>{Object.entries(run.inventory.dice).map(([id, count]) => <li key={id}><b>{getDieDefinition(id).name} × {count} · 已装备 {run.loadout.filter((d) => d === id).length}</b><span>{getDieDefinition(id).description}</span></li>)}{run.inventory.modifiers.map((id) => <li key={id}><b>{getModifier(id)?.name} · {run.modifiers.includes(id) ? '已佩戴' : '未佩戴'}</b><span>{getModifier(id)?.description}</span></li>)}</ul></details><span>徽章 {run.modifiers.length} / 2 {run.modifiers.map((id) => getModifier(id)?.symbol).join(' ')}</span><span className="save-note">{warning ? '本次未能保存' : '进度自动保存在本机'}</span></footer>
+    <footer className="night-footer"><span>失利 {run.losses} / 2</span><details className="pack-details"><summary>本夜行囊 · {Object.values(run.inventory.dice).reduce((n, count) => n + count, 0)} 颗骰子</summary><ul>{Object.entries(run.inventory.dice).map(([id, count]) => <li key={id}><b>{getDieDefinition(id).name} × {count} · 已装备 {run.loadout.filter((d) => d === id).length}</b><span>{getDieDefinition(id).description}</span></li>)}{run.inventory.modifiers.map((id) => <li key={id}><b>{getModifier(id, run.scoringVersion)?.name} · {run.modifiers.includes(id) ? '已佩戴' : '未佩戴'}</b><span>{getModifier(id, run.scoringVersion)?.description}</span></li>)}</ul></details><span>徽章 {run.modifiers.length} / 2 {run.modifiers.map((id) => getModifier(id, run.scoringVersion)?.symbol).join(' ')}</span><span className="save-note">{warning ? '本次未能保存' : '进度自动保存在本机'}</span></footer>
     {run.stage === 'playing' && paused && !settings && !rules && <PauseDialog canResume={canResume} onResume={resume} onHome={leave} />}
     {settings && <ComfortDialog value={comfort} onChange={onComfort} onClose={() => setSettings(false)} appearanceUnlocked={appearanceUnlocked} volume={audioPreferences.volume} onVolume={setVolume} />}
-    {rules && <RulesModal onClose={() => setRules(false)} />}
+    {rules && <RulesModal scoringVersion={run.scoringVersion} onClose={() => setRules(false)} />}
   </main>
 }

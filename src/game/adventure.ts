@@ -9,7 +9,8 @@ import { bustProbability, nextHumanLoadout } from './risk'
 import type { DieInstance, GameState, PlayerId } from './types'
 import { abilityEvent, evaluateSelection, modifierDisabledReason } from './selection'
 import { CORE_MODIFIERS, SCORING_VERSION } from './cores'
-import { addInventoryItem, createInventory, loadoutError, type Inventory } from './inventory'
+import { addInventoryItem, createStartingInventory, loadoutError, type Inventory } from './inventory'
+import type { ScoringVersion } from './scoringVersions'
 
 export type RunStage = 'core' | 'seat' | 'playing' | 'reward' | 'won' | 'lost'
 export type DuelFlow = 'ready' | 'rolling' | 'selecting' | 'inspect' | 'decide' | 'handoff' | 'bust' | 'charm' | 'done'
@@ -17,7 +18,7 @@ export interface Reward { id: string; kind: 'die' | 'modifier'; definitionId: st
 export interface TableResult { table: number; attempt: number; winner: PlayerId; humanScore: number; aiScore: number; peak: number }
 export interface AdventureRun {
   version: 2
-  scoringVersion: typeof SCORING_VERSION
+  scoringVersion: ScoringVersion
   inventory: Inventory
   opening: { offers: string[]; selected: string | null; source: 'new' | 'migrated' }
   rewardOfferId: string | null
@@ -54,18 +55,18 @@ export function randomStep(seed: number): { seed: number; value: number } {
   return { seed: x >>> 0, value: (x >>> 0) / 4294967296 }
 }
 
-function gameFor(run: Pick<AdventureRun, 'loadout' | 'modifiers' | 'table'>): GameState {
+function gameFor(run: Pick<AdventureRun, 'loadout' | 'modifiers' | 'table' | 'scoringVersion'>): GameState {
   return createInitialState({ targetScore: run.table === 3 ? 4000 : 2000, aiDifficulty: opponentAt(run.table).difficulty,
-    dieLoadout: [...run.loadout], modifierIds: [...run.modifiers], scoringVersion: SCORING_VERSION })
+    dieLoadout: [...run.loadout], modifierIds: [...run.modifiers], scoringVersion: run.scoringVersion })
 }
 
 export function createAdventure(seed: number, id: string, origin = 'traveller'): AdventureRun {
   const loadout = [...(ORIGINS.find((o) => o.id === origin) ?? ORIGINS[0]).loadout]
-  return { version: 2, scoringVersion: SCORING_VERSION, inventory: createInventory(loadout),
+  return { version: 2, scoringVersion: SCORING_VERSION, inventory: createStartingInventory(loadout),
     opening: { offers: CORE_MODIFIERS.map((m) => m.id), selected: null, source: 'new' }, rewardOfferId: null,
     id, revision: 0, rng: seed >>> 0 || 1, rewardRng: (seed ^ 0xa53c917b) >>> 0 || 1,
     table: 0, losses: 0, stage: 'core', flow: 'ready', loadout, modifiers: [],
-    game: gameFor({ loadout, modifiers: [], table: 0 }), pendingDice: [], remainingLoadout: [], rewards: [],
+    game: gameFor({ loadout, modifiers: [], table: 0, scoringVersion: SCORING_VERSION }), pendingDice: [], remainingLoadout: [], rewards: [],
     history: [], peak: 0, largestBust: 0 }
 }
 

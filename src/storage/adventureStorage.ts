@@ -4,8 +4,9 @@ import { MODIFIERS } from '../game/modifiers'
 import type { DieInstance, GameState } from '../game/types'
 import { hasAnyScore, validateSelectedDice } from '../game/scoring'
 import { getBrowserStorage, normalizeSettings, saveStored } from './gameStorage'
-import { CORE_MODIFIERS, SCORING_VERSION } from '../game/cores'
-import { createInventory, loadoutError, type Inventory } from '../game/inventory'
+import { CORE_MODIFIERS } from '../game/cores'
+import { isScoringVersion, LEGACY_SCORING_VERSION } from '../game/scoringVersions'
+import { createInventory, ensureBaseDice, loadoutError, type Inventory } from '../game/inventory'
 
 export const ADVENTURE_KEY = 'tavern-bones-adventure-v2'
 export const LEGACY_ADVENTURE_KEY = 'tavern-bones-adventure-v1'
@@ -31,6 +32,8 @@ const usage = (x: unknown) => record(x) && record(x.turn) && record(x.game)
 export function normalizeAdventure(value: unknown): AdventureRun | null {
   if (!record(value) || ![1, 2].includes(value.version as number) || typeof value.id !== 'string' || !value.id || value.id.length > 200) return null
   const legacy = value.version === 1
+  const scoringVersion = legacy ? LEGACY_SCORING_VERSION : value.scoringVersion
+  if (!isScoringVersion(scoringVersion)) return null
   if (!['revision', 'rng', 'rewardRng', 'table', 'losses', 'peak', 'largestBust'].every((key) => number(value[key]))) return null
   if ((value.table as number) > 3 || (value.losses as number) > 2 || !(value.rng as number) || (value.rng as number) > 0xffffffff
     || !(value.rewardRng as number) || (value.rewardRng as number) > 0xffffffff) return null
@@ -47,7 +50,7 @@ export function normalizeAdventure(value: unknown): AdventureRun | null {
   } else {
     const bag = value.inventory, start = value.opening
     const coreIds = new Set(CORE_MODIFIERS.map((m) => m.id))
-    if (value.scoringVersion !== SCORING_VERSION || !record(bag) || !record(bag.dice)
+    if (!record(bag) || !record(bag.dice)
       || !Object.entries(bag.dice).every(([id, n]) => diceIds.has(id) && number(n) && n > 0 && n <= 100)
       || !stringArray(bag.modifiers, modifierIds) || new Set(bag.modifiers).size !== bag.modifiers.length) return null
     if (!record(start) || !['new', 'migrated'].includes(start.source as string) || !stringArray(start.offers, coreIds)
@@ -61,6 +64,7 @@ export function normalizeAdventure(value: unknown): AdventureRun | null {
       || inventory.modifiers.length || value.modifiers.length)) return null
     if (value.stage === 'reward' ? typeof value.rewardOfferId !== 'string' || !value.rewardOfferId : value.rewardOfferId !== null) return null
   }
+  inventory = ensureBaseDice(inventory)
   if (loadoutError(inventory, value.loadout, value.modifiers)) return null
   if (!dice(value.pendingDice) || value.pendingDice.length > 7 || !stringArray(value.remainingLoadout, diceIds) || value.remainingLoadout.length > 7) return null
   if (!Array.isArray(value.rewards) || value.rewards.length > 3 || !value.rewards.every((r) => record(r) && typeof r.id === 'string'
@@ -80,7 +84,7 @@ export function normalizeAdventure(value: unknown): AdventureRun | null {
   const config = normalizeSettings(g.config, 'adventure')
   if (config.targetScore !== g.config.targetScore || JSON.stringify(config.dieLoadout) !== JSON.stringify(g.config.dieLoadout)
     || JSON.stringify(config.modifierIds) !== JSON.stringify(g.config.modifierIds) || config.modifierIds.length > 2) return null
-  if (!legacy && g.config.scoringVersion !== SCORING_VERSION) return null
+  if (!legacy && g.config.scoringVersion !== scoringVersion) return null
   if (config.modifierIds.filter((id) => CORE_MODIFIERS.some((m) => m.id === id)).length > 1) return null
   if (value.stage === 'playing') {
     if (JSON.stringify(config.dieLoadout) !== JSON.stringify(value.loadout) || JSON.stringify(config.modifierIds) !== JSON.stringify(value.modifiers)) return null
@@ -101,9 +105,9 @@ export function normalizeAdventure(value: unknown): AdventureRun | null {
   if (value.stage === 'lost' && value.losses !== 2) return null
   if (value.stage === 'core' && (value.history.length || value.pendingDice.length || g.phase !== 'ready' || g.winner)) return null
   // Reconstruct JSON-compatible fields and never trust persisted presentation events.
-  return { ...value, version: 2, scoringVersion: SCORING_VERSION, inventory, opening, history,
+  return { ...value, version: 2, scoringVersion, inventory, opening, history,
     rewardOfferId: legacy ? value.stage === 'reward' ? `${value.id}:${value.table}:${value.history.length}` : null : value.rewardOfferId,
-    game: { ...g, config: { ...config, scoringVersion: SCORING_VERSION } } as GameState, lastEvent: undefined } as unknown as AdventureRun
+    game: { ...g, config: { ...config, scoringVersion } } as GameState, lastEvent: undefined } as unknown as AdventureRun
 }
 
 function read(key: string, storage: Storage | undefined): unknown {

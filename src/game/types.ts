@@ -124,6 +124,8 @@ export interface GameModifier {
   benefit?: string
   cost?: string
   example?: string
+  /** Maximum single-die groups of each face in one scoring partition. */
+  maxSinglesPerFace?: number
   modifyGroup?: (group: ScoreGroup, context: { player: PlayerId; version: number }) => number
   modifyScore?: (score: number, context: { player: PlayerId }) => number
   modifyDice?: (diceCount: number, context: { player: PlayerId }) => number

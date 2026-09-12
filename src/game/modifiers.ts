@@ -1,4 +1,4 @@
-import { CORE_MODIFIERS, SCORING_VERSION } from './cores'
+import { CORE_MODIFIERS, getCoreModifiers, SCORING_VERSION } from './cores'
 import type {
   GameModifier,
   ModifierAbility,
@@ -42,12 +42,20 @@ export const MODIFIERS: GameModifier[] = [
   ...CORE_MODIFIERS,
 ]
 
-export function getModifier(id: string): GameModifier | undefined {
-  return MODIFIERS.find((modifier) => modifier.id === id)
+export function getModifier(id: string, version: number = SCORING_VERSION): GameModifier | undefined {
+  const modifier = MODIFIERS.find((modifier) => modifier.id === id)
+  return modifier?.category === 'core' ? getCoreModifiers(version).find((core) => core.id === id) : modifier
 }
 
-export function getModifiers(ids: readonly string[]): GameModifier[] {
-  return ids.map(getModifier).filter((modifier): modifier is GameModifier => Boolean(modifier))
+export function getModifiers(ids: readonly string[], version: number = SCORING_VERSION): GameModifier[] {
+  return ids.map((id) => getModifier(id, version)).filter((modifier): modifier is GameModifier => Boolean(modifier))
+}
+
+export function getSingleDiceLimit(context?: ScoringContext): number {
+  if (!context) return Infinity
+  return getModifiers(context.modifierIds, context.version).reduce(
+    (limit, modifier) => Math.min(limit, modifier.maxSinglesPerFace ?? Infinity), Infinity,
+  )
 }
 
 export function createModifierUsage(game: Record<string, number> = {}): ModifierUsage {
@@ -115,7 +123,7 @@ export function applyScoreModifiers(ids: readonly string[], score: number, playe
 
 export function applyGroupModifiers(group: ScoreGroup, context?: ScoringContext): ScoreGroup {
   if (!context) return group
-  return getModifiers(context.modifierIds).reduce((current, modifier) => {
+  return getModifiers(context.modifierIds, context.version).reduce((current, modifier) => {
     if (!modifier.modifyGroup) return current
     const score = modifier.modifyGroup(current, { player: context.player ?? 'human', version: context.version ?? SCORING_VERSION })
     if (!Number.isSafeInteger(score) || score <= 0) throw new RangeError('Scoring modifiers must preserve positive integer groups')

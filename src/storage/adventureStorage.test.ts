@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { adventureReducer as reduce, createAdventure } from '../game/adventure'
 import { ADVENTURE_KEY, LEGACY_ADVENTURE_KEY, normalizeAdventure, readAdventure, saveAdventure } from './adventureStorage'
+import { evaluateSelection } from '../game/selection'
+import { addInventoryItem } from '../game/inventory'
 
 function storage() {
   const data = new Map<string, string>()
@@ -77,17 +79,68 @@ describe('versioned adventure storage', () => {
   it('rejects unowned equipment, impossible counts, unknown versions, multiple cores and mismatched frozen config', () => {
     const run = current()
     const patches = [
-      { inventory: { ...run.inventory, dice: { standard: 5 } } },
+      { loadout: ['joker', ...run.loadout.slice(1)] },
       { inventory: { ...run.inventory, dice: { standard: -1 } } },
       { inventory: { ...run.inventory, dice: { standard: 6.5 } } },
       { inventory: { ...run.inventory, dice: { standard: 6, unknown: 1 } } },
       { scoringVersion: 999 },
+      { scoringVersion: 1 },
+      { game: { ...run.game, config: { ...run.game.config, scoringVersion: 999 } } },
       { modifiers: ['core-steady', 'core-kindred'], inventory: { ...run.inventory, modifiers: ['core-steady', 'core-kindred'] } },
       { modifiers: [] },
       { opening: { ...run.opening, selected: null } },
       { rewardOfferId: 'stale' },
     ]
     for (const patch of patches) expect(normalizeAdventure({ ...run, ...patch })).toBeNull()
+  })
+
+  it('tops up v1 and v2 base dice idempotently while preserving special equipment and progress', () => {
+    const modern = current()
+    const loadout = ['lucky-five', ...Array<string>(5).fill('standard')]
+    const short = { ...modern, loadout, inventory: { ...modern.inventory, dice: { standard: 5, 'lucky-five': 1 } },
+      game: { ...modern.game, scores: { human: 700, ai: 450 }, config: { ...modern.game.config, dieLoadout: loadout } } }
+    const old = { ...short, version: 1, inventory: undefined, scoringVersion: undefined, modifiers: [],
+      game: { ...short.game, config: { ...short.game.config, modifierIds: [], scoringVersion: undefined } } }
+    for (const source of [short, old]) {
+      const result = normalizeAdventure(JSON.parse(JSON.stringify(source)))!
+      expect(result.inventory.dice).toEqual({ standard: 6, 'lucky-five': 1 })
+      expect(result.loadout).toEqual(loadout)
+      expect(result.game.config.dieLoadout).toEqual(loadout)
+      expect(result.game.scores).toEqual(short.game.scores)
+      expect([result.table, result.rng, result.rewardRng, result.pendingDice]).toEqual([source.table, source.rng, source.rewardRng, source.pendingDice])
+      const store = storage()
+      saveAdventure(result, store)
+      const again = readAdventure(store).run!
+      expect(again).toEqual(result)
+      expect(normalizeAdventure(again)).toEqual(result)
+    }
+    expect(normalizeAdventure({ ...short, inventory: { ...short.inventory, dice: { 'lucky-five': 1 } } })?.inventory.dice.standard).toBe(6)
+    expect(normalizeAdventure({ ...short, inventory: { ...short.inventory, dice: { standard: 5 } } })).toBeNull()
+    expect(short.inventory.dice.standard).toBe(5)
+  })
+
+  it.each([1, 2] as const)('preserves scoring version %i through resume, double down, bank and the next table', (version) => {
+    let run = current()
+    run = { ...run, scoringVersion: version, modifiers: ['core-steady', 'double-down'],
+      inventory: addInventoryItem(run.inventory, 'modifier', 'double-down'), flow: 'selecting',
+      game: { ...run.game, phase: 'selecting', turnScore: 1500, config: { ...run.game.config, scoringVersion: version, modifierIds: ['core-steady', 'double-down'] },
+        rolledDice: [0, 1, 2].map((i) => ({ id: `one${i}`, definitionId: 'standard', value: 1, selected: true })) } }
+    const store = storage()
+    const doubled = reduce(run, { type: 'ABILITY', id: 'double-down' })
+    saveAdventure(doubled, store)
+    const restored = readAdventure(store).run!
+    const points = version === 1 ? 1200 : 1000
+    expect(evaluateSelection(restored.game).score).toBe(points)
+    expect(restored.game.doubledSelection).toBe(true)
+    expect(restored.game.modifierUsage).toEqual(doubled.game.modifierUsage)
+    const won = reduce(restored, { type: 'BANK' })
+    expect(won.game.scores.human).toBe(1500 + points)
+    expect(won.stage).toBe('reward')
+    const next = reduce(reduce(won, { type: 'SKIP_REWARD', offerId: won.rewardOfferId! }), { type: 'SIT' })
+    expect(next.scoringVersion).toBe(version)
+    expect(next.game.config.scoringVersion).toBe(version)
+    expect(normalizeAdventure(next)?.game.config.scoringVersion).toBe(version)
+    expect(createAdventure(9, 'fresh').scoringVersion).toBe(2)
   })
   it('keeps a migrated run playable when writes fail, and handles denied reads', () => {
     const raw = JSON.stringify(legacy())

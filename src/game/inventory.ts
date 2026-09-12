@@ -1,4 +1,4 @@
-import { DIE_DEFINITIONS } from './dice'
+import { DEFAULT_LOADOUT, DIE_DEFINITIONS } from './dice'
 import { getModifier } from './modifiers'
 
 /** Counts include equipped items. Loaded Hand's temporary die is never owned. */
@@ -8,6 +8,18 @@ export function createInventory(loadout: readonly string[], modifiers: readonly 
   const dice: Record<string, number> = Object.create(null)
   for (const id of loadout) dice[id] = (dice[id] ?? 0) + 1
   return { dice, modifiers: [...new Set(modifiers)] }
+}
+
+/** Baseline ownership is independent of the six equipped dice. Idempotent for saved bags. */
+export function ensureBaseDice(inventory: Inventory): Inventory {
+  const baseline = createInventory(DEFAULT_LOADOUT).dice
+  const dice = { ...inventory.dice }
+  for (const [id, count] of Object.entries(baseline)) dice[id] = Math.max(dice[id] ?? 0, count)
+  return { dice, modifiers: [...inventory.modifiers] }
+}
+
+export function createStartingInventory(loadout: readonly string[], modifiers: readonly string[] = []): Inventory {
+  return ensureBaseDice(createInventory(loadout, modifiers))
 }
 
 export function addInventoryItem(inventory: Inventory, kind: 'die' | 'modifier', id: string): Inventory {

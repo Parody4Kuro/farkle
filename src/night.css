@@ -198,7 +198,7 @@
 .night-scene.seating > .table-stage-wrap { position: absolute; inset: 0; height: 100%; min-height: 0; }
 .night-scene.seating .encounter-panel { position: relative; left: auto; top: auto; width: auto; margin: 0; }
 .night-scene.seating .seat-route { position: relative; inset: auto; grid-column: 1 / -1; }
-.loadout-panel { position: relative; width: 100%; padding: 20px; background: #202825f5; border: 1px solid #a78b5350; border-radius: 3px; }
+.loadout-panel { position: relative; width: 100%; min-width: 0; padding: 20px; background: #202825f5; border: 1px solid #a78b5350; border-radius: 3px; }
 .loadout-panel h2 { font: 24px var(--font-display); color: #f1dfbb; margin: 12px 0; }
 .loadout-panel p, .loadout-panel small { font-size: 12px; line-height: 1.6; color: #c2b79f; }
 .loadout-panel fieldset { border: 0; padding: 0; margin: 14px 0; min-width: 0; }
@@ -206,6 +206,13 @@
 .loadout-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .badge-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .loadout-panel label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #e5d3af; }
+.loadout-slot { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.loadout-reset, .loadout-remove { align-self: start; padding: 7px 10px; border: 1px solid #8d784b; border-radius: 3px; background: #30382d; color: #eddfc3; cursor: pointer; font: inherit; font-size: 12px; }
+.loadout-reset { margin-bottom: 12px; }
+.loadout-panel :is(.loadout-reset,.loadout-remove):disabled { opacity: .5; cursor: default; }
+.loadout-panel :is(.loadout-reset,.loadout-remove):focus-visible { outline: 3px solid #ffe1a3; outline-offset: 3px; }
+.loadout-panel .loadout-help { font-size: 11px; margin: 10px 0 0; }
+.scoring-version-note { padding: 10px; border-left: 2px solid #c8a568; background: #8d784b18; }
 .loadout-panel select { width: 100%; min-height: 38px; background: #171f1e; border: 1px solid #8d784b; border-radius: 3px; color: #eddfc3; padding: 6px; }
 .loadout-panel select:focus-visible { outline: 3px solid #ffe1a3; outline-offset: 3px; }
 .loadout-panel .night-primary { width: 100%; min-height: 48px; padding: 12px 16px; }

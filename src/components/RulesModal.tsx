@@ -1,4 +1,5 @@
-import { MODIFIERS } from '../game/modifiers'
+import { getModifiers, MODIFIERS } from '../game/modifiers'
+import { LEGACY_SCORING_VERSION, SCORING_VERSION } from '../game/scoringVersions'
 import { SINGLE_SCORES, STRAIGHT_RULES, kindScore } from '../game/scoring'
 import type { DieFace } from '../game/types'
 import { AccessibleDialog } from './AccessibleDialog'
@@ -7,9 +8,10 @@ const KIND_FACES: DieFace[] = [1, 2, 3, 4, 5, 6]
 
 interface RulesModalProps {
   onClose: () => void
+  scoringVersion?: number
 }
 
-export function RulesModal({ onClose }: RulesModalProps) {
+export function RulesModal({ onClose, scoringVersion = SCORING_VERSION }: RulesModalProps) {
   return (
     <AccessibleDialog ariaLabelledBy="rules-heading" className="rules-dialog" onClose={onClose}>
       <section className="rules-modal">
@@ -17,6 +19,7 @@ export function RulesModal({ onClose }: RulesModalProps) {
         <span className="eyebrow">酒馆规则</span>
         <h2 id="rules-heading" tabIndex={-1} data-autofocus>如何赢下这局</h2>
         <p className="settings-intro">选择本次新投出的计分骰，决定继续冒险或保存分数。率先达到目标分的一方获胜。下列为基础分，核心的收益与代价会在计分明细中展开。</p>
+        {scoringVersion === LEGACY_SCORING_VERSION && <p className="scoring-version-note">本夜沿用旧版计分：铜筹账簿的三个 1 仍得 600 分。新开的一夜采用 500 分的新规则。</p>}
 
         <div className="rules-grid">
           <article className="rules-card">
@@ -53,14 +56,14 @@ export function RulesModal({ onClose }: RulesModalProps) {
           <article className="rules-card">
             <h3>徽章</h3>
             <ul className="rules-modifiers">
-              {MODIFIERS.map((modifier) => (
-                <li key={modifier.id}><span aria-hidden="true">{modifier.symbol}</span><div><strong>{modifier.name}{modifier.adventureOnly ? ' · 酒馆之夜核心' : ''}</strong><p>{modifier.description}</p></div></li>
+              {getModifiers(MODIFIERS.map((modifier) => modifier.id), scoringVersion).map((modifier) => (
+                <li key={modifier.id}><span aria-hidden="true">{modifier.symbol}</span><div><strong>{modifier.name}{modifier.adventureOnly ? ' · 酒馆之夜核心' : ''}</strong><p>{modifier.description}</p>{modifier.example && <p>{modifier.example}</p>}</div></li>
               ))}
             </ul>
           </article>
         </div>
 
-        <p>酒馆之夜每桌入座前可整理六颗骰子和至多两枚徽章，其中核心最多一枚。奖励与换下物品保留在本夜行囊；首次失利在原桌重试，累计两败结束当夜。</p>
+        <p>酒馆之夜始终保有六颗基础公平骰，特殊骰另计。每桌入座前可整理六颗骰子和至多两枚徽章，其中核心最多一枚。奖励与换下物品保留在本夜行囊；首次失利在原桌重试，累计两败结束当夜。</p>
         <p>黄金一点先选一颗新投出的骰子；孤注一掷使用后，选择与骰值锁定。失焦、隐藏窗口或打开面板会暂停对局，返回后需点击“继续”。</p>
 
         <button className="primary-action rules-close-action" type="button" onClick={onClose}>明白了</button>

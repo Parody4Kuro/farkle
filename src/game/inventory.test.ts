@@ -1,10 +1,34 @@
 import { describe, expect, it } from 'vitest'
-import { addInventoryItem, createInventory, loadoutError } from './inventory'
-import { adventureReducer as reduce, createAdventure } from './adventure'
+import { addInventoryItem, createInventory, createStartingInventory, ensureBaseDice, loadoutError } from './inventory'
+import { adventureReducer as reduce, createAdventure, ORIGINS } from './adventure'
 
 const six = Array<string>(6).fill('standard')
 
 describe('owned inventory and equipment', () => {
+  it.each(ORIGINS)('keeps six base dice available with the $id origin', ({ id, loadout }) => {
+    const run = reduce(createAdventure(44, 'starting', id), { type: 'SELECT_CORE', id: 'core-steady' })
+    expect(run.inventory.dice.standard).toBe(6)
+    expect(run.loadout).toEqual(loadout)
+    expect(loadoutError(run.inventory, six, run.modifiers)).toBeNull()
+    expect(loadoutError(run.inventory, loadout, run.modifiers)).toBeNull()
+    const entered = reduce(run, { type: 'SIT', loadout: six })
+    expect(entered.game.config.dieLoadout).toEqual(six)
+    expect(reduce(entered, { type: 'ROLL' }).pendingDice.map((die) => die.definitionId)).toEqual(six)
+    expect(entered.inventory).toEqual(run.inventory)
+  })
+
+  it('keeps baseline ownership separate from equipment counting and temporary seventh dice', () => {
+    const special = ['lucky-five', ...six.slice(1)]
+    expect(createInventory(special).dice).toEqual({ 'lucky-five': 1, standard: 5 })
+    const inventory = createStartingInventory(special, ['loaded-hand'])
+    expect(inventory.dice).toEqual({ 'lucky-five': 1, standard: 6 })
+    expect(ensureBaseDice(ensureBaseDice(inventory))).toEqual(inventory)
+    let run = reduce(createAdventure(9, 'loaded'), { type: 'SELECT_CORE', id: 'core-steady' })
+    run = { ...run, inventory }
+    run = reduce(run, { type: 'SIT', modifiers: ['loaded-hand'], loadout: special })
+    expect(reduce(run, { type: 'ROLL' }).pendingDice).toHaveLength(7)
+    expect(run.inventory).toEqual(inventory)
+  })
   it('counts identical rewards without discarding the dice they replace', () => {
     const initial = createInventory(six)
     const once = addInventoryItem(initial, 'die', 'joker')
