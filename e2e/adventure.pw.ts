@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { adventureReducer, createAdventure, type AdventureRun } from '../src/game/adventure'
 import { ADVENTURE_KEY, COMFORT_KEY, LEGACY_ADVENTURE_KEY } from '../src/storage/adventureStorage'
-import { playCompleteNight } from './helpers/completeNight'
+import { COMPLETE_NIGHT_SEED, playCompleteNight } from './helpers/completeNight'
 import { pendingNight as pending, openedNight } from './helpers/adventureFixtures'
 import { addInventoryItem } from '../src/game/inventory'
 import { DIE_DEFINITIONS } from '../src/game/dice'
@@ -155,7 +155,7 @@ test('corrupt adventure save leaves classic and new adventures available', async
 test('plays an entire seeded night through visible controls and weighted rolls', async ({ page }) => {
   test.setTimeout(180000)
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await openNight(page, createAdventure(1, 'complete-night'))
+  await openNight(page, createAdventure(COMPLETE_NIGHT_SEED, 'complete-night'))
   await playCompleteNight(page)
 })
 

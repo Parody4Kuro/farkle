@@ -5,7 +5,7 @@ import { appendFile, cp, mkdir, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { adventureReducer, createAdventure, type AdventureRun } from '../src/game/adventure'
 import { ADVENTURE_KEY, COMFORT_KEY, DEFAULT_COMFORT, PROFILE_KEY } from '../src/storage/adventureStorage'
-import { playCompleteNight } from '../e2e/helpers/completeNight'
+import { COMPLETE_NIGHT_SEED, playCompleteNight } from '../e2e/helpers/completeNight'
 import { openedNight, pendingNight } from '../e2e/helpers/adventureFixtures'
 
 const bundle = path.resolve('release/mac-arm64/Tavern Bones.app')
@@ -139,6 +139,7 @@ test('packaged offline app runs WebGL, a real physics Worker, seven dice, keyboa
     await expect.poll(() => page.evaluate(() => window.__tavernDiagnostics.audio.every((context) => context.state !== 'running'))).toBe(true)
     await nativeWindow.evaluate((window) => { window.restore(); window.show(); window.focus() })
     await expect.poll(() => page.evaluate(() => window.tavernDesktop?.isVisible())).toBe(true)
+    await activate(app, page)
     await expect(page.getByRole('dialog', { name: '对局已暂停' })).toBeVisible()
     expect(await page.evaluate(() => window.__tavernDiagnostics.audio.every((context) => context.state !== 'running'))).toBe(true)
     await page.getByRole('button', { name: '继续', exact: true }).click()
@@ -148,6 +149,7 @@ test('packaged offline app runs WebGL, a real physics Worker, seven dice, keyboa
     await expect(page.getByRole('button', { name: '保存分数', exact: true })).toBeInViewport()
     await nativeWindow.evaluate((window) => window.setFullScreen(false))
     await expect.poll(() => nativeWindow.evaluate((window) => window.isFullScreen())).toBe(false)
+    await resumeForeground(app, page)
     await page.getByRole('button', { name: '保存分数', exact: true }).click()
     await expect(page.locator('.night-scoreband > div').first()).toContainText('100')
     expect(errors).toEqual([])
@@ -271,7 +273,7 @@ test('plays the complete four-table night offline in the packaged app', async ({
   const { app, page } = await launch(info.outputPath('data'), info)
   try {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await seed(app, page, createAdventure(1, 'complete-desktop-night'))
+    await seed(app, page, createAdventure(COMPLETE_NIGHT_SEED, 'complete-desktop-night'))
     await playCompleteNight(page, () => resumeForeground(app, page))
     await expect.poll(() => page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).wins, PROFILE_KEY)).toBe(1)
     await page.screenshot({ path: info.outputPath('completed-night.png') })

@@ -3,7 +3,12 @@ import { chooseAiDice, shouldAiContinue } from '../../src/game/ai'
 import { DIE_DEFINITIONS } from '../../src/game/dice'
 import { MODIFIERS } from '../../src/game/modifiers'
 import { bustProbability } from '../../src/game/risk'
+import { SCORING_VERSION } from '../../src/game/scoringVersions'
 import type { DiceValue } from '../../src/game/types'
+
+// Deterministic winning path for this UI strategy under scoring v2. Seed 1
+// now loses at table 2; keep the full four-table acceptance flow reproducible.
+export const COMPLETE_NIGHT_SEED = 2
 
 /** Exercise the same visible controls in the browser and packaged desktop game. */
 export async function playCompleteNight(page: Page, activate?: () => Promise<void>) {
@@ -60,7 +65,7 @@ export async function playCompleteNight(page: Page, activate?: () => Promise<voi
     }
     const labels = await page.locator('button.dice-hit').evaluateAll((elements) => elements.map((e) => e.getAttribute('aria-label')!))
     const values: DiceValue[] = labels.map((label) => label.startsWith('Joker') ? 'JOKER' : Number(label.match(/点数 (\d)/)![1]) as DiceValue)
-    const best = chooseAiDice(values, { modifierIds: modifiers, player: 'human', version: 1 })
+    const best = chooseAiDice(values, { modifierIds: modifiers, player: 'human', version: SCORING_VERSION })
     for (const index of best.indices) { await activate?.(); await page.locator('button.dice-hit').nth(index).click() }
     const hot = best.indices.length === values.length
     const ids = hot ? [...loadout, ...(modifiers.includes('loaded-hand') ? ['standard'] : [])]

@@ -2,6 +2,12 @@
 
 原创中世纪酒馆风格的单机骰子游戏，支持本地浏览器和独立 Mac 应用。包含第一人称“四桌一夜”冒险，以及保留自由配置与独立统计的经典对局。所有人物、场景、骰面和声音由本项目代码原创生成。
 
+## 下载与文档
+
+- **[下载最新 Mac 版本](https://github.com/Parody4Kuro/farkle/releases/latest)**：在 Release 的 Assets 中下载 `Tavern-Bones-mac-arm64.zip`，解压后将 `Tavern Bones.app` 拖入“应用程序”。适用于 Apple Silicon（M 系列芯片）；无需克隆仓库或安装开发工具。
+- [更新记录](CHANGELOG.md) · [文档目录](docs/README.md) · [Mac 安装与升级说明](artifacts/macos/README.md)
+- `src/` 保存游戏源码，`desktop/` 保存桌面壳，`dist/` 保存最新网页构建，`artifacts/macos/` 保存最新 Mac 归档与校验文件。历史发布包通过 GitHub Releases 保留。
+
 ## 酒馆之夜
 
 - 选择已解锁的六骰起始套装，再从三个核心徽章中选一个，第一桌即可尝试不同打法。依次挑战铜币商人玛拉、退役卫兵奥斯里克、游荡赌客露和老板布兰；三桌普通局目标 2000 分，老板桌目标 4000 分。
@@ -26,11 +32,11 @@
 
 ### Mac 应用（Apple Silicon）
 
-双击 `release/mac-arm64/Tavern Bones.app` 即可进入酒馆，也可以将它拖入“应用程序”或固定到 Dock。应用包含全部运行资源，游玩时不需要 Node.js、终端、Vite 服务或网络。
+从 [GitHub Releases](https://github.com/Parody4Kuro/farkle/releases/latest) 下载并解压应用即可进入酒馆，也可以将它拖入“应用程序”或固定到 Dock。应用包含全部运行资源，游玩时不需要 Node.js、终端、Vite 服务或网络。从源码打包的应用位于 `release/mac-arm64/Tavern Bones.app`。
 
 仓库同时保存[最新版 Mac 应用 ZIP](artifacts/macos/Tavern-Bones-mac-arm64.zip)与[校验清单](artifacts/macos/manifest.json)。ZIP 通过 Git LFS 跟踪；克隆后执行 `git lfs pull` 获取应用，详见[应用归档说明](artifacts/macos/README.md)。网页构建 `dist/` 也随源码提交。今后本项目的生成成果在验证后统一提交并推送。
 
-首版为本机自用的 arm64 应用，使用 ad-hoc 签名。正式分发给其他人前，需要另行配置 Developer ID 签名与 Apple 公证。
+当前 arm64 应用使用 ad-hoc 签名，尚未配置 Developer ID 签名与 Apple 公证。下载后 macOS 可能阻止首次打开，处理方法见[安装说明](artifacts/macos/README.md)。
 
 - 使用标准 Mac 窗口与菜单，支持全屏、最小化和 `⌘Q`；关闭窗口后点击 Dock 可以重新打开。
 - 失焦、最小化或隐藏窗口时暂停整个对局；恢复窗口后手动继续。游戏使用只读焦点和可见性通知，同时兼容浏览器生命周期事件。

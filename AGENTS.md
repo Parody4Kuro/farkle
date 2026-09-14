@@ -78,6 +78,7 @@ npm run build
 - Mac 应用必须重新打包；仅更新源码、运行 `npm run build` 或推送代码不会更新现有 `.app`。交付前检查应用包与最新构建一致，保留稳定的应用路径和用户存档。
 - 将最新 `release/mac-arm64/Tavern Bones.app` 用 macOS `ditto` 归档到 `artifacts/macos/Tavern-Bones-mac-arm64.zip`，保留应用结构、符号链接与签名。更新同目录的 `manifest.json`，记录应用来源提交和 SHA-256；验证归档解压后签名及包内资源。
 - Mac 归档通过 Git LFS 提交；仓库级启用 `git lfs install --local`，提交 `.gitattributes`。推送后确认普通 Git 提交与 LFS 对象都已到达远程，并报告提交及下载入口。
+- 用户要求发布 Release 时，同步应用内部版本与 `vX.Y.Z` 标签，更新 `CHANGELOG.md`、`docs/releases/`、Mac 清单和 `SHA256SUMS.txt`。标签指向包含完整产物的交付提交；先上传草稿 Release 附件并核验，再发布。Release 附件包含实际 Mac ZIP、清单和校验文件，首页提供最新 Release 入口。
 - `release/` 是已归档应用的展开目录，不重复跟踪同一应用的展开副本。依赖安装、可再生缓存、临时诊断文件、机器编辑器文件，以及玩家个人存档和凭据不属于交付成果，不加入仓库；正式验收结论和所需证据应保存到受版本控制的目录。
 - 保留与任务无关的用户改动，不执行破坏性 Git 操作。
 - 提交信息使用简洁的英文 Conventional Commit 风格，例如 `feat: add tavern dice game` 或 `fix: preserve turn state after hot dice`。
