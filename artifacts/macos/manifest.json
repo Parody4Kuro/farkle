@@ -4,26 +4,26 @@
   "architecture": "arm64",
   "applicationVersion": "0.1.0",
   "electronVersion": "44.3.0",
-  "sourceCommit": "aef66c02b5cf82ec7c9f529ccaebc54d50d80063",
-  "archivedAt": "2026-09-14T03:20:30.108Z",
+  "sourceCommit": "9de6ec6ba1423cd2ba1a25802a5f321931e7af1d",
+  "archivedAt": "2026-09-14T15:38:20.493Z",
   "archive": {
     "file": "Tavern-Bones-mac-arm64.zip",
-    "bytes": 128716594,
-    "sha256": "d8209a972db3c0a736c4f4b647d0ad75c1c553a33ee9b88414eb5f79c99c4436"
+    "bytes": 128730008,
+    "sha256": "1e3d28a0e46049a143e44c72fefe1f3eb90a6273d7c2881049b8fa28477911cf"
   },
-  "appAsarSha256": "8f7ef24f8a1396d963fa36a9bd587fa8bef8eab3e16aeb089db61881d64aa629",
+  "appAsarSha256": "3b8566ed028168aee86ae6794c60151abe4742fc2ab7e9cef7a8f9232c9cc6ac",
   "rendererFiles": [
     {
-      "path": "dist/assets/TavernScene-B-Ki0o2t.js",
-      "sha256": "06ec4d943c32fff6f04d7b75ae5998318002e01fb3c348c8ea17fa8962b7a63b"
+      "path": "dist/assets/TavernScene-BiUaXi4H.js",
+      "sha256": "42920417225c29c73e85e3de9c3c4c6b8b337092947ef8c6f859fa693006194a"
     },
     {
-      "path": "dist/assets/index-BAXkKxrH.js",
-      "sha256": "78de639a7e93600ae971af495e7eac415524dc813c2f19eab6454bd51751c8d7"
+      "path": "dist/assets/index-CodMia77.css",
+      "sha256": "e3d30008ff6f4a2e98943004e752f01a0e524d337ddb1bd0a3ec5cc38b408335"
     },
     {
-      "path": "dist/assets/index-BdNsBXDI.css",
-      "sha256": "79dbbb6c0a8134a9bc9bb5a62232b5204759891172c7f13491b2219796ec3f1b"
+      "path": "dist/assets/index-DHxzTwzO.js",
+      "sha256": "259853c911814a60915f046002240fa3265ba4b7f65f2b5f12d11bc836a847b7"
     },
     {
       "path": "dist/assets/physics.worker-xmDIXbKA.js",
@@ -35,37 +35,13 @@
     },
     {
       "path": "dist/index.html",
-      "sha256": "c3375080d719ce507ed11751f29fbff01e22df2556ed4d5fd11a10a83202613b"
+      "sha256": "17cc2f6a3bab2e41d4c98481f293071bacdc4ac8f3765c2010fd7038d8ad841b"
     },
     {
       "path": "dist/og.jpg",
       "sha256": "668575d1c4624cee081b8185597febdb9cba8044323b6cd7da195e8c676953b4"
     }
   ],
-  "verification": {
-    "extractedSignature": "codesign --verify --deep --strict: passed",
-    "archiveMatchesLocalApp": true,
-    "rendererMatchesDist": true,
-    "desktopMatchesSource": true,
-    "bundleVersionMatchesPackage": true,
-    "unitTests": {
-      "passed": 170,
-      "files": 24
-    },
-    "desktopTests": {
-      "passed": 7
-    },
-    "lint": "passed",
-    "build": "passed"
-  },
-  "fixes": [
-    "Six baseline fair dice and old-save inventory top-up",
-    "Loadout reset and explicit badge removal",
-    "Ledger scoring v2: three ones score 500; three fives score 250",
-    "Existing nights retain scoring v1"
-  ],
-  "saveDataIncluded": false,
-  "releaseTag": "v0.1.0",
   "desktopFiles": [
     {
       "path": "desktop/assets.cjs",
@@ -79,5 +55,26 @@
       "path": "desktop/preload.cjs",
       "sha256": "778db1947e32ca7872727ded0565e5feeab41865500450e31f912a71c4b4a0bf"
     }
-  ]
+  ],
+  "verification": {
+    "extractedSignature": "codesign --verify --deep --strict: passed",
+    "archiveMatchesLocalApp": true,
+    "rendererMatchesDist": true,
+    "desktopMatchesSource": true,
+    "bundleVersionMatchesPackage": true,
+    "unitTests": {
+      "passed": 186,
+      "files": 28
+    },
+    "browserCases": 92,
+    "finalFocusedBrowserTests": 20,
+    "lint": "passed",
+    "build": "passed",
+    "desktopTests": {
+      "passed": 8,
+      "fullNightIsolatedRerun": "passed; see validation report"
+    }
+  },
+  "validationReport": "docs/friends-validation.md",
+  "saveDataIncluded": false
 }

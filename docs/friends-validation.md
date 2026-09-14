@@ -23,4 +23,15 @@ WebKit 是 Playwright 引擎测试，不等同发行版 Safari 的人工验收�
 
 浏览器完整矩阵共 92 项：首轮 88 项通过，Chrome / Edge 各两项旧断言与异步准备等待失败；修正测试后四项定向复验通过。Firefox、WebKit 全套各 23 项通过。另一次并发 WebKit 直连检查曾超过测试等待时限，采用与产品收集信息时限相符的等待后通过。
 
-Mac 完整 8 项通过，包含正式 STUN 配置的 Mac—Chrome 对战。最后的 UI 提示和键盘收尾修改另做定向回归；归档签名及资源哈希由 `scripts/archive-mac.mjs` 解压核验，记录在 `artifacts/macos/manifest.json`。
+Mac 完整 8 项通过，包含正式 STUN 配置的 Mac—Chrome 对战。最终包复验时 7 项直接通过，完整四桌用例在与浏览器验收并发运行时出现一次骰子点击超时；停止并发后对同一包单独重跑，40.2 秒通过，未修改游戏逻辑或跳过步骤。最后的 UI 提示和键盘收尾修改已在四种浏览器完成 20 项定向回归，全部通过。归档签名及资源哈希由 `scripts/archive-mac.mjs` 解压核验，记录在 `artifacts/macos/manifest.json`。
+
+
+来源提交：`9de6ec6ba1423cd2ba1a25802a5f321931e7af1d`。ZIP SHA-256：`1e3d28a0e46049a143e44c72fefe1f3eb90a6273d7c2881049b8fa28477911cf`。
+
+## 界面证据
+
+![1280×720 七骰桌面，主要操作可见](evidence/friends/table-1280.png)
+
+![1280×720 自由局整备，行囊独立滚动](evidence/friends/free-loadout-1280.png)
+
+![Mac 房主恢复后显示双方最新比分](evidence/friends/mac-browser-friends.png)
