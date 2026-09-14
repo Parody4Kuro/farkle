@@ -28,6 +28,8 @@
 
 双击 `release/mac-arm64/Tavern Bones.app` 即可进入酒馆，也可以将它拖入“应用程序”或固定到 Dock。应用包含全部运行资源，游玩时不需要 Node.js、终端、Vite 服务或网络。
 
+仓库同时保存[最新版 Mac 应用 ZIP](artifacts/macos/Tavern-Bones-mac-arm64.zip)与[校验清单](artifacts/macos/manifest.json)。ZIP 通过 Git LFS 跟踪；克隆后执行 `git lfs pull` 获取应用，详见[应用归档说明](artifacts/macos/README.md)。网页构建 `dist/` 也随源码提交。今后本项目的生成成果在验证后统一提交并推送。
+
 首版为本机自用的 arm64 应用，使用 ad-hoc 签名。正式分发给其他人前，需要另行配置 Developer ID 签名与 Apple 公证。
 
 - 使用标准 Mac 窗口与菜单，支持全屏、最小化和 `⌘Q`；关闭窗口后点击 Dock 可以重新打开。

@@ -8,7 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 dist-ssr
 *.local
 
@@ -27,5 +26,5 @@ dist-ssr
 test-results/
 playwright-report/
 
-# Desktop application bundles
+# Expanded desktop build directories; published archives live in artifacts/macos/.
 release/

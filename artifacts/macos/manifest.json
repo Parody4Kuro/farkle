@@ -1,0 +1,57 @@
+{
+  "product": "Tavern Bones",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "applicationVersion": "0.0.0",
+  "electronVersion": "44.3.0",
+  "sourceCommit": "a3789847c549905ee5f6ac67dba7d1a05900f786",
+  "archivedAt": "2026-09-14T02:56:26.914Z",
+  "archive": {
+    "file": "Tavern-Bones-mac-arm64.zip",
+    "bytes": 128713187,
+    "sha256": "5425d86617729da595b806746b0c77b1a5218aaa9ed351128d71de189ad2cb29"
+  },
+  "appAsarSha256": "a33792cab1dd58c5e721246e50e5f729125fa6e0342a1a3cc64ef70329306f09",
+  "rendererFiles": [
+    {
+      "path": "dist/assets/TavernScene-B-Ki0o2t.js",
+      "sha256": "06ec4d943c32fff6f04d7b75ae5998318002e01fb3c348c8ea17fa8962b7a63b"
+    },
+    {
+      "path": "dist/assets/index-BAXkKxrH.js",
+      "sha256": "78de639a7e93600ae971af495e7eac415524dc813c2f19eab6454bd51751c8d7"
+    },
+    {
+      "path": "dist/assets/index-BdNsBXDI.css",
+      "sha256": "79dbbb6c0a8134a9bc9bb5a62232b5204759891172c7f13491b2219796ec3f1b"
+    },
+    {
+      "path": "dist/assets/physics.worker-xmDIXbKA.js",
+      "sha256": "721eb3c513d60fd76b273371136edaee80525a40315e3065926ddc8f5a862b8a"
+    },
+    {
+      "path": "dist/favicon.svg",
+      "sha256": "f515d60596d2c30c822d186d5dad9b55c5f960d386c91f2fcc42789589a6f783"
+    },
+    {
+      "path": "dist/index.html",
+      "sha256": "c3375080d719ce507ed11751f29fbff01e22df2556ed4d5fd11a10a83202613b"
+    },
+    {
+      "path": "dist/og.jpg",
+      "sha256": "668575d1c4624cee081b8185597febdb9cba8044323b6cd7da195e8c676953b4"
+    }
+  ],
+  "verification": {
+    "extractedSignature": "codesign --verify --deep --strict: passed",
+    "archiveMatchesLocalApp": true,
+    "rendererMatchesDist": true
+  },
+  "fixes": [
+    "Six baseline fair dice and old-save inventory top-up",
+    "Loadout reset and explicit badge removal",
+    "Ledger scoring v2: three ones score 500; three fives score 250",
+    "Existing nights retain scoring v1"
+  ],
+  "saveDataIncluded": false
+}
