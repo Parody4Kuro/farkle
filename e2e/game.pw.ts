@@ -1,3 +1,4 @@
+import { equipItem } from './helpers/equipment'
 import { test, expect, type Page } from '@playwright/test'
 
 async function openGame(page: Page, random = 0) {
@@ -49,7 +50,7 @@ test('physical landing, keyboard selection, locked tray, bank and AI handoff', a
 
 test('seven dice and repeated Hot Dice preserve all locked history and can win', async ({ page }) => {
   await openGame(page)
-  await page.getByRole('button', { name: /满载之手/ }).click()
+  await equipItem(page, 'badge', 0, 'loaded-hand')
   await start(page)
   await roll(page, 7)
   for (let round = 0; round < 2; round++) {
@@ -67,9 +68,9 @@ test('seven dice and repeated Hot Dice preserve all locked history and can win',
 
 test('Joker skins, golden one and double down stay synchronized with selection', async ({ page }) => {
   await openGame(page, 0.999)
-  for (let i = 1; i <= 6; i++) await page.getByRole('combobox', { name: new RegExp('^骰子 ' + i + ' ') }).selectOption('joker')
-  await page.getByRole('button', { name: /黄金一点/ }).click()
-  await page.getByRole('button', { name: /孤注一掷/ }).click()
+  for (let i = 0; i < 6; i++) await equipItem(page, 'die', i, 'joker')
+  await equipItem(page, 'badge', 0, 'golden-one')
+  await equipItem(page, 'badge', 1, 'double-down')
   await start(page)
   await roll(page, 6)
   await expect(page.getByRole('button', { name: /Joker 骰，显示骷髅面/ })).toHaveCount(6)
@@ -78,7 +79,7 @@ test('Joker skins, golden one and double down stay synchronized with selection',
   await expect(page.getByRole('button', { name: /骰子点数 1，Joker 骰，已选择/ })).toHaveCount(1)
   await page.getByRole('button', { name: /孤注一掷/ }).click()
   await expect(page.locator('button.dice-hit')).toHaveCount(0)
-  await expect(page.locator('.turn-stats').getByText('200', { exact: false })).toBeVisible()
+  await expect(page.locator('.turn-stats').getByText('200', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '保存分数' }).click()
   await expect(page.locator('.score-card.human strong')).toHaveText('200')
 })

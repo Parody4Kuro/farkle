@@ -37,9 +37,10 @@ export function DiceTable({
             disabled
           />
         ))}
-        {rolledDice.map((die) => (
+        {rolledDice.map((die, index) => (
           <Dice
             key={die.id}
+            dieId={die.id} number={index + 1}
             value={die.value}
             name={getDieDefinition(die.definitionId).name}
             selected={die.selected}

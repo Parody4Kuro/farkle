@@ -2,6 +2,8 @@
 
 `Tavern-Bones-mac-arm64.zip` 是当前 Apple Silicon Mac 应用，通过 Git LFS 与源码一起提交。`manifest.json` 记录本包对应的游戏源码提交、压缩包与 `app.asar` 的 SHA-256。
 
+当前分支的好友直连构建可[直接下载 ZIP](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)，对应本目录清单。它尚未发布新的版本标签，历史 Release 不会随分支更新。
+
 ## 安装与升级
 
 1. 打开 [最新 Release](https://github.com/Parody4Kuro/farkle/releases/latest)，在 Assets 中下载 `Tavern-Bones-mac-arm64.zip`。GitHub 自动生成的 Source code 是源码归档，不是 Mac 应用。
@@ -30,7 +32,7 @@ shasum -a 256 artifacts/macos/Tavern-Bones-mac-arm64.zip
 
 1. 通过项目测试、lint 和构建，提交游戏源码以确定来源提交。
 2. 运行 `npm run desktop:package`，更新默认路径的 `.app`。
-3. 使用下面的命令归档，更新清单，并解压验证签名与包内构建资源。
+3. 运行 `node scripts/archive-mac.mjs`，使用 ditto 归档，自动更新清单与 SHA256SUMS，并解压验证签名、包版本及所有网页/桌面资源。
 4. 将 `dist/`、归档、清单和本次其他成果提交、推送；核对远程提交及 LFS 对象。
 5. 发布版本时同步 `package.json` 与锁文件的版本号，重新构建应用，补齐 `CHANGELOG.md` 和 `docs/releases/` 说明。生成 `SHA256SUMS.txt`，为最终交付提交创建 `vX.Y.Z` 标签并推送。先创建草稿 Release，上传 ZIP、清单和校验文件，核验附件后再正式发布。
 

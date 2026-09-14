@@ -10,6 +10,8 @@ const PIP_POSITIONS: Record<number, string[]> = {
 }
 
 interface DiceProps {
+  dieId?: string
+  number?: number
   value: DiceValue
   selected?: boolean
   locked?: boolean
@@ -21,7 +23,7 @@ interface DiceProps {
 }
 
 export function Dice({
-  value,
+  value, dieId, number,
   selected = false,
   locked = false,
   rolling = false,
@@ -35,6 +37,7 @@ export function Dice({
   const accessibleLabel = `${label}${name ? `，${name}` : ''}${selected ? '，已选择' : ''}`
   const face = (
     <>
+      {number && <small className="die-number" aria-hidden="true">{number}</small>}
       {value === JOKER ? (
         <span className="joker-face" aria-hidden="true">☠</span>
       ) : (
@@ -48,7 +51,7 @@ export function Dice({
 
   if (!disabled && onClick) {
     return (
-      <button className={className} type="button" aria-label={accessibleLabel} aria-pressed={selected} onClick={onClick}>
+      <button data-die-id={dieId} className={className} type="button" aria-label={accessibleLabel} aria-pressed={selected} onClick={onClick}>
         {face}
       </button>
     )

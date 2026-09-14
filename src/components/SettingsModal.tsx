@@ -2,6 +2,7 @@ import { DIE_DEFINITIONS } from '../game/dice'
 import { MODIFIERS } from '../game/modifiers'
 import { TARGET_SCORE_OPTIONS } from '../game/rules'
 import type { AudioPreferences, GameSettings } from '../game/types'
+import { LoadoutEditor } from './LoadoutEditor'
 import { AccessibleDialog } from './AccessibleDialog'
 
 interface SettingsModalProps {
@@ -29,8 +30,8 @@ export function SettingsModal({
   audioPreferences,
   isFirstGame,
   onUpdate,
-  onLoadoutChange,
-  onToggleModifier,
+  onLoadoutChange: _onLoadoutChange,
+  onToggleModifier: _onToggleModifier,
   onToggleAudio,
   onAudioVolumeChange,
   onStart,
@@ -70,52 +71,9 @@ export function SettingsModal({
           </label>
         </div>
 
-        <div className="settings-section">
-          <div className="section-heading">
-            <div><span className="eyebrow">你的骰盅</span><h3>骰子配置</h3></div>
-            <span>默认使用公平骰</span>
-          </div>
-          <div className="loadout-grid">
-            {settings.dieLoadout.map((definitionId, index) => {
-              const definition = DIE_DEFINITIONS.find((item) => item.id === definitionId) ?? DIE_DEFINITIONS[0]
-              return (
-                <label className="die-select" key={index}>
-                  <span>骰子 {index + 1}</span>
-                  <select value={definitionId} onChange={(event) => onLoadoutChange(index, event.target.value)}>
-                    {DIE_DEFINITIONS.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </select>
-                  <small>{definition.description}</small>
-                </label>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="settings-section">
-          <div className="section-heading">
-            <div><span className="eyebrow">可选规则</span><h3>徽章</h3></div>
-            <span>可自由组合</span>
-          </div>
-          <div className="modifier-grid">
-            {MODIFIERS.filter((modifier) => !modifier.adventureOnly).map((modifier) => {
-              const active = settings.modifierIds.includes(modifier.id)
-              return (
-                <button
-                  className={`modifier-card ${active ? 'is-active' : ''}`}
-                  type="button"
-                  aria-pressed={active}
-                  key={modifier.id}
-                  onClick={() => onToggleModifier(modifier.id)}
-                >
-                  <span className="modifier-icon" aria-hidden="true">{modifier.symbol}</span>
-                  <span><strong>{modifier.name}</strong><small>{modifier.description}</small></span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <LoadoutEditor value={{ dice: settings.dieLoadout, modifiers: settings.modifierIds }}
+          inventory={{ dice: Object.fromEntries(DIE_DEFINITIONS.map((die) => [die.id, 6])), modifiers: MODIFIERS.filter((m) => !m.adventureOnly).map((m) => m.id) }}
+          badgeLimit={4} onChange={(draft) => onUpdate({ dieLoadout: draft.dice, modifierIds: draft.modifiers })} />
 
         <div className="settings-section audio-settings">
           <div className="section-heading">

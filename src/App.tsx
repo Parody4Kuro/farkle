@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import './comic.css'
 import './night.css'
+import './friends.css'
+import { FriendGame } from './components/FriendGame'
 import { TableStage } from './components/TableStage'
 import { ComicEffects } from './components/ComicEffects'
 import { RollPresentation } from './presentation/rollPresentation'
@@ -11,7 +13,7 @@ import { RulesModal } from './components/RulesModal'
 import { ScoreBoard } from './components/ScoreBoard'
 import { SettingsModal } from './components/SettingsModal'
 import { TurnPanel } from './components/TurnPanel'
-import { getActiveModifiers } from './game/modifiers'
+import { getModifiers } from './game/modifiers'
 import { useDiceGame } from './hooks/useDiceGame'
 import { createAdventure, type AdventureRun } from './game/adventure'
 import { bustProbability, nextHumanLoadout } from './game/risk'
@@ -46,7 +48,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
     ? state.rolledDice.filter((die) => !die.selected).length
     : state.diceToRoll
   const overlaySafe = state.phase === 'ready' || state.phase === 'selecting' || state.phase === 'game_over'
-  const abilities = getActiveModifiers(state.config.modifierIds)
+  const abilities = getModifiers(state.config.modifierIds)
 
   const openSettings = () => {
     if (!overlaySafe) return
@@ -194,7 +196,22 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
 }
 
 function App() {
-  const [mode, setMode] = useState<'lobby' | 'classic' | 'adventure'>('lobby')
+  useEffect(() => {
+    const keys = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || document.querySelector('[role="dialog"],dialog[open]')) return
+      if (event.target instanceof HTMLElement && event.target.closest('input,select,textarea,[contenteditable="true"]')) return
+      if (event.key === 'Escape') {
+        const detail = [...document.querySelectorAll<HTMLDetailsElement>('main details[open]')].at(-1)
+        if (detail) { event.preventDefault(); detail.open = false; detail.querySelector<HTMLElement>('summary')?.focus(); return }
+      }
+      const label = event.key.toLowerCase() === 't' ? '查看规则' : event.key === 'Escape' ? '暂停对局' : ''
+      const button = label ? document.querySelector<HTMLButtonElement>(`main button[aria-label="${label}"]:not(:disabled)`) : null
+      if (button) { event.preventDefault(); button.click() }
+    }
+    window.addEventListener('keydown', keys)
+    return () => window.removeEventListener('keydown', keys)
+  }, [])
+  const [mode, setMode] = useState<'lobby' | 'classic' | 'adventure' | 'friends'>('lobby')
   const [restored] = useState(readAdventure)
   const [saved, setSaved] = useState(restored.run)
   const [profile, setProfile] = useState(() => saved ? recordAdventure(loadProfile(), saved) : loadProfile())
@@ -218,9 +235,10 @@ function App() {
     if (run) setProfile((current) => recordAdventure(current, run))
     setMode('lobby')
   }
+  if (mode === 'friends') return <FriendGame onHome={() => home()} />
   if (mode === 'classic') return <ClassicGame onHome={() => home()} />
   if (mode === 'adventure' && saved) return <AdventureGame key={saved.id} initial={saved} comfort={comfort} onComfort={updateComfort} onHome={home} onFinished={finish} appearanceUnlocked={profile.wins > 0} profileWarning={warning} />
-  return <TavernLobby saved={saved} profile={profile} comfort={comfort} warning={warning} onComfort={updateComfort} onClassic={() => setMode('classic')}
+  return <TavernLobby saved={saved} profile={profile} comfort={comfort} warning={warning} onComfort={updateComfort} onClassic={() => setMode('classic')} onFriends={() => setMode('friends')}
     onContinue={() => setMode('adventure')} onStart={(origin) => {
       const run = createAdventure(crypto.getRandomValues(new Uint32Array(1))[0], crypto.randomUUID(), origin)
       if (!saveAdventure(run)) setWarning('无法保存这次冒险；当前仍可继续。')

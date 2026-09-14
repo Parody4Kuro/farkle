@@ -1,3 +1,4 @@
+import { GameKeyboard } from './GameKeyboard'
 import { canUseModifier } from '../game/modifiers'
 import type { GameModifier, GamePhase, ModifierUsage } from '../game/types'
 
@@ -35,30 +36,30 @@ export function ActionBar({
   const rolling = phase === 'rolling'
   const disabled = paused || !humanTurn || rolling
 
+  const active = abilities.filter((modifier) => modifier.activation)
+  const available = (modifier: GameModifier) => !disabled && selecting && canUseModifier(modifier, modifierUsage) && !abilityDisabledReasons?.[modifier.id] && (modifier.activation?.ability !== 'double-down' || selectionValid)
   return (
     <div className="actions-wrap">
-      {abilities.length > 0 && selecting && (
+      {abilities.length > 0 && (selecting || ready) && (
         <div className="ability-row" aria-label="徽章能力">
           {abilities.map((modifier) => {
-            const spent = !canUseModifier(modifier, modifierUsage)
-            const needsValidSelection = modifier.activation?.ability === 'double-down'
-            const reason = abilityDisabledReasons?.[modifier.id]
+            const reason = !modifier.activation ? undefined : !humanTurn ? '等待你的回合。' : paused ? '当前画面、演出或连接尚未就绪。' : !selecting ? '等待投掷完成后使用。' : abilityDisabledReasons?.[modifier.id]
             return (
-              <button
+              <div className="badge-action" key={modifier.id}><button
                 className="ability-button"
                 type="button"
-                disabled={disabled || spent || Boolean(reason) || (needsValidSelection && !selectionValid)}
+                disabled={!modifier.activation || !available(modifier)}
                 title={reason ?? modifier.description}
-                key={modifier.id}
                 onClick={() => onUseModifier(modifier.id)}
               >
                 <span aria-hidden="true">{modifier.symbol}</span>
-                {modifier.name} {spent ? '· 已使用' : reason?.includes('已锁定') ? '· 已锁定' : ''}
-              </button>
+                {modifier.name} {modifier.activation || modifier.useLimit ? `· 剩余 ${Math.max(0, (modifier.activation ?? modifier.useLimit)!.maxUses - (modifierUsage[(modifier.activation ?? modifier.useLimit)!.scope][modifier.id] ?? 0))}` : '· 被动'}
+              </button><details><summary aria-label={`查看${modifier.name}详情`}>ⓘ</summary><p>{modifier.description}</p>{reason && <p>{reason}</p>}</details></div>
             )
           })}
         </div>
       )}
+      <GameKeyboard enabled={!disabled && (ready || selecting)} canRoll={ready || (selecting && selectionValid)} canBank={selecting && canBank && selectionValid} onRoll={onRoll} onBank={onBank} abilities={active.map((m) => ({ id: m.id, enabled: available(m) }))} onAbility={onUseModifier} />
       <div className="action-bar">
         <button
           className="primary-action"

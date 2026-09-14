@@ -8,6 +8,9 @@
 - [Mac 应用安装、升级与归档流程](../artifacts/macos/README.md)
 - [v0.1.0 发布说明与验证记录](releases/v0.1.0.md)
 
+- [整备、键盘与好友直连说明](friends-and-controls.md)
+- [好友直连与界面验收记录](friends-validation.md)
+
 ## 规则与验证
 
 - [整备与铜筹账簿问题核验](loadout-ledger-review.md)：公平骰库存、入座前装备编辑、计分版本与旧存档兼容。

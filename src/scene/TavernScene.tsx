@@ -300,9 +300,9 @@ export default function TavernScene({ state, presentation, selectionValid, onTog
           const label = (die.value === JOKER ? 'Joker 骰，显示骷髅面' : '骰子点数 ' + die.value) + '，' + definition.name + (isLocked ? '，已锁定' : die.selected ? '，已选择' : '')
           const className = 'dice-hit' + (die.selected ? ' selected' : '') + (isLocked ? ' locked' : '') + (die.selected && !selectionValid ? ' invalid' : '')
           if (interactive) return (
-            <button key={die.id} type="button" className={className} aria-label={label} aria-pressed={die.selected}
+            <button key={die.id} data-die-id={die.id} type="button" className={className} aria-label={label} aria-pressed={die.selected}
               ref={(el) => { if (el) hits.set(die.id, el); else hits.delete(die.id) }} onClick={() => onToggleDie(die.id)}>
-              <span aria-hidden="true">{die.selected ? '✓' : String(index + 1).padStart(2, '0')}</span>
+              <span aria-hidden="true">{String(index + 1)}{die.selected ? ' ✓' : ''}</span>
             </button>
           )
           return <span key={die.id} className={className + ' noninteractive'} role="img" aria-label={state.phase === 'rolling' && !isLocked ? '骰子正在滚动' : label}

@@ -1,3 +1,4 @@
+import { equipItem } from './equipment'
 import { expect, type Page } from '@playwright/test'
 import { chooseAiDice, shouldAiContinue } from '../../src/game/ai'
 import { DIE_DEFINITIONS } from '../../src/game/dice'
@@ -36,9 +37,11 @@ export async function playCompleteNight(page: Page, activate?: () => Promise<voi
     }
     if (stage?.includes('stage-won') || stage?.includes('stage-lost')) break
     if (stage?.includes('stage-seat')) {
-      for (let i = 0; i < 6; i++) await page.getByRole('combobox', { name: new RegExp('^骰子 ' + (i + 1)) }).selectOption(loadout[i])
-      for (let i = 0; i < 2; i++) await page.getByRole('combobox', { name: new RegExp('^徽章 ' + (i + 1)) }).selectOption('')
-      for (let i = 0; i < modifiers.length; i++) await page.getByRole('combobox', { name: new RegExp('^徽章 ' + (i + 1)) }).selectOption(modifiers[i])
+      const reset = page.getByRole('button', { name: '全部换回公平骰' })
+      if (await reset.isEnabled()) await reset.click()
+      for (let i = 0; i < 6; i++) if (loadout[i] !== 'standard') await equipItem(page, 'die', i, loadout[i])
+      for (let i = 0; i < 2; i++) await equipItem(page, 'badge', i, '')
+      for (let i = 0; i < modifiers.length; i++) await equipItem(page, 'badge', i, modifiers[i])
       await page.getByRole('button', { name: '入座，开始这一桌', exact: true }).click(); continue
     }
     if (stage?.includes('stage-reward')) {

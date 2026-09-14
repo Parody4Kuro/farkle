@@ -1,12 +1,15 @@
 # Tavern Bones
 
-原创中世纪酒馆风格的单机骰子游戏，支持本地浏览器和独立 Mac 应用。包含第一人称“四桌一夜”冒险，以及保留自由配置与独立统计的经典对局。所有人物、场景、骰面和声音由本项目代码原创生成。
+原创中世纪酒馆风格的骰子游戏，支持单机冒险、经典对局和双人好友直连，可在本地浏览器和独立 Mac 应用中游玩。包含第一人称“四桌一夜”冒险，以及保留自由配置与独立统计的经典对局。所有人物、场景、骰面和声音由本项目代码原创生成。
 
 ## 下载与文档
 
 - **[下载最新 Mac 版本](https://github.com/Parody4Kuro/farkle/releases/latest)**：在 Release 的 Assets 中下载 `Tavern-Bones-mac-arm64.zip`，解压后将 `Tavern Bones.app` 拖入“应用程序”。适用于 Apple Silicon（M 系列芯片）；无需克隆仓库或安装开发工具。
 - [更新记录](CHANGELOG.md) · [文档目录](docs/README.md) · [Mac 安装与升级说明](artifacts/macos/README.md)
 - `src/` 保存游戏源码，`desktop/` 保存桌面壳，`dist/` 保存最新网页构建，`artifacts/macos/` 保存最新 Mac 归档与校验文件。历史发布包通过 GitHub Releases 保留。
+
+- **[下载包含好友直连的当前 Mac 构建](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)** · [构建清单](artifacts/macos/manifest.json)。当前构建尚未发布新 Release；上方 Release 入口保留历史正式版。
+- [整备、键盘与好友直连说明](docs/friends-and-controls.md) · [本次验收记录](docs/friends-validation.md)
 
 ## 酒馆之夜
 
@@ -24,7 +27,7 @@
 
 每次状态变化同步保存到本机。已经抽出的骰子、待完成的演出、AI 流程、随机状态、行囊和奖励选择都会保留；刷新后从酒馆选择“继续这一夜”，再点击“继续”。关闭应用后恢复可以重播同一次演出，不能重新抽取结果。回到酒馆会取消当前异步任务，开始新冒险会替换当夜存档，收藏保留。
 
-键盘可用 Tab / Shift+Tab 移动焦点，空格选择骰子，回车触发按钮；整备下拉框支持按选项前的数字快速选择。macOS Safari/WebKit 默认设置下，使用 Option+Tab 可把按钮纳入导航。
+整备使用“骰盅＋行囊＋详情”：选槽位后选物品替换，点选两个同类槽位交换。键盘可用方向键 / E 操作整备，局内 1–7 直选骰、方向键 / E 或空格选骰、F 继续、长按 Q 400 毫秒落袋、R / Shift+R 使用主动徽章。T 查看规则，Esc 关闭面板或暂停；保留 Tab / Shift+Tab 与按钮回车操作。macOS Safari/WebKit 默认设置下，使用 Option+Tab 可把按钮纳入导航。
 
 不设一夜总时长目标，按自己的节奏思考与观看演出。核心参数及模拟比较见 [构筑验证记录](docs/build-validation.md)；模拟结果与个人试玩体验分开记录。商店、悬赏、分支事件、每日挑战和专门的触屏交互仍是后续扩展。
 
@@ -32,14 +35,14 @@
 
 ### Mac 应用（Apple Silicon）
 
-从 [GitHub Releases](https://github.com/Parody4Kuro/farkle/releases/latest) 下载并解压应用即可进入酒馆，也可以将它拖入“应用程序”或固定到 Dock。应用包含全部运行资源，游玩时不需要 Node.js、终端、Vite 服务或网络。从源码打包的应用位于 `release/mac-arm64/Tavern Bones.app`。
+从 [GitHub Releases](https://github.com/Parody4Kuro/farkle/releases/latest) 下载并解压应用即可进入酒馆，也可以将它拖入“应用程序”或固定到 Dock。应用包含全部运行资源，单机游玩时不需要 Node.js、终端、Vite 服务或网络；好友直连需要可达的网络。从源码打包的应用位于 `release/mac-arm64/Tavern Bones.app`。
 
 仓库同时保存[最新版 Mac 应用 ZIP](artifacts/macos/Tavern-Bones-mac-arm64.zip)与[校验清单](artifacts/macos/manifest.json)。ZIP 通过 Git LFS 跟踪；克隆后执行 `git lfs pull` 获取应用，详见[应用归档说明](artifacts/macos/README.md)。网页构建 `dist/` 也随源码提交。今后本项目的生成成果在验证后统一提交并推送。
 
 当前 arm64 应用使用 ad-hoc 签名，尚未配置 Developer ID 签名与 Apple 公证。下载后 macOS 可能阻止首次打开，处理方法见[安装说明](artifacts/macos/README.md)。
 
 - 使用标准 Mac 窗口与菜单，支持全屏、最小化和 `⌘Q`；关闭窗口后点击 Dock 可以重新打开。
-- 失焦、最小化或隐藏窗口时暂停整个对局；恢复窗口后手动继续。游戏使用只读焦点和可见性通知，同时兼容浏览器生命周期事件。
+- 失焦、最小化或隐藏窗口时暂停单机对局；好友对战只暂停本地画面、声音和输入，继续接收和裁定局面。恢复窗口后手动继续。游戏使用只读焦点和可见性通知，同时兼容浏览器生命周期事件。
 - 桌面版从独立的新存档开始，数据保存在 `~/Library/Application Support/Tavern Bones/`，其中 Chromium 会话数据位于 `Chromium/` 子目录。应用移动或替换升级不会移动或删除这些数据。
 - 冒险保留当前的同步保存与中断恢复；经典模式继续只保存设置和统计。首版没有浏览器存档迁移、联网账户或自动更新。
 
@@ -124,6 +127,8 @@ WebGL 不可用、上下文丢失或 3D 模块加载失败时，自动使用可�
 ## 结构
 
 - `src/game/`：计分组合搜索、骰子、AI、规则、纯状态转换、Modifier 与类型
+- `src/game/duel.ts`：固定席位的双人纯规则和操作意图
+- `src/multiplayer/`：手动邀请、原生 WebRTC、房主裁定与重连快照
 - `src/hooks/useDiceGame.ts`：玩家/AI 流程编排与异步时序
 - `src/presentation/`：可取消的掷骰演出接口与领域事件反馈
 - `src/scene/`：卡通 3D 场景、物理 Worker、备用轨迹与骰面朝向
@@ -137,4 +142,4 @@ WebGL 不可用、上下文丢失或 3D 模块加载失败时，自动使用可�
 
 冒险使用 `tavern-bones-adventure-v2`（当夜状态、规则版本与暂停检查点）、`tavern-bones-profile-v1`（幂等结算与收藏）、`tavern-bones-comfort-v1`（体验偏好）。缺少 v2 时自动迁移旧 `tavern-bones-adventure-v1`，保留旧键作为备份；只重建旧档确实持有的装备，不补发核心，也不倒退已跳过的桌子。迁移后的下一次失败采用同桌重试规则。
 
-存在但损坏的 v2 不会回退到旧进度；界面提示无法恢复，并保留新冒险和经典模式入口。存储失败不打断当前内存中的游戏。经典模式保留原有自由配置、四种普通徽章和独立统计，新核心仅在冒险中提供。
+存在但损坏的 v2 不会回退到旧进度；界面提示无法恢复，并保留新冒险和经典模式入口。存储失败不打断当前内存中的游戏。经典模式保留原有自由配置、四种普通徽章和独立统计，新核心也可在好友自由局的共享完整目录中选择。

@@ -1,4 +1,3 @@
-import { getRiskLevel } from '../game/rules'
 import type { PlayerId } from '../game/types'
 
 interface TurnPanelProps {
@@ -24,9 +23,8 @@ export function TurnPanel({
   message,
   isHotDice,
   doubledSelection,
-  riskPercent,
+  riskPercent: _riskPercent,
 }: TurnPanelProps) {
-  const risk = getRiskLevel(diceRemaining)
   return (
     <>
       <div className="turn-stats">
@@ -36,7 +34,7 @@ export function TurnPanel({
           <strong>{hasSelection ? selectedScore.toLocaleString() : '—'}{doubledSelection && <small>双倍</small>}</strong>
         </div>
         <div><span>剩余骰子</span><strong>{diceRemaining}</strong></div>
-        <div className={`risk risk-${risk.tone}`}><span>{riskPercent === undefined ? '风险' : '下一投爆骰'}</span><strong>{riskPercent === undefined ? risk.label : `${(riskPercent * 100).toFixed(1)}%`}</strong></div>
+        <div><span>可落袋</span><strong>{selectedValid ? (turnScore + selectedScore).toLocaleString() : '—'}</strong></div>
       </div>
       <div className={`game-message ${isHotDice ? 'hot-message' : ''}`} role="status" aria-live="polite">
         <span aria-hidden="true">{isHotDice ? '✦' : currentPlayer === 'human' ? '◆' : '♜'}</span>

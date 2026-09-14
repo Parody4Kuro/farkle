@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { AdventureRun, Reward } from '../game/adventure'
 import { getDieDefinition } from '../game/dice'
-import { getActiveModifiers, getModifier } from '../game/modifiers'
+import { getModifiers, getModifier } from '../game/modifiers'
 import { OPPONENTS, opponentAt } from '../game/opponents'
 import { abilityReasons, evaluateSelection } from '../game/selection'
 import { useAdventure } from '../hooks/useAdventure'
@@ -108,8 +108,8 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
     </div>
     {run.stage === 'playing' && <section className="night-dock" aria-label="本回合操作">
       <div className="night-status" role="status" aria-live="polite"><span className={`turn-dot ${human ? '' : 'ai'}`} />{game.message}<span className="pot-label">本回合待落袋 <b>{game.turnScore.toLocaleString()}</b></span></div>
-      <div className="night-decisions"><ScoreExplanation state={game} /><ActionBar phase={game.phase} humanTurn={human} selectionValid={choice.valid} hasSelection={selected.length > 0}
-        canBank={choice.valid} abilities={getActiveModifiers(game.config.modifierIds)} modifierUsage={game.modifierUsage} abilityDisabledReasons={abilityReasons(game)} paused={paused}
+      <div className="night-decisions"><div className="compact-ledger"><strong>本次 {choice.valid ? choice.score : 0} · 可落袋 {choice.valid ? choice.bankTotal : 0}</strong>{selected.length > 0 && !choice.valid && <p role="status">选择尚未完整计分：请调整 {choice.unusedDice.map((value) => value === 'JOKER' ? '骷髅' : value).join('、')}。</p>}<details><summary>计分明细与风险</summary><ScoreExplanation state={game} /></details></div><ActionBar phase={game.phase} humanTurn={human} selectionValid={choice.valid} hasSelection={selected.length > 0}
+        canBank={choice.valid} abilities={getModifiers(game.config.modifierIds)} modifierUsage={game.modifierUsage} abilityDisabledReasons={abilityReasons(game)} paused={paused}
         onRoll={() => act({ type: 'ROLL' })} onBank={() => act({ type: 'BANK' })} onUseModifier={(id) => act({ type: 'ABILITY', id })} /></div>
     </section>}
     {run.stage === 'core' && <div className="night-overlay"><CoreChoice scoringVersion={run.scoringVersion} offers={run.opening.offers} onChoose={(id) => act({ type: 'SELECT_CORE', id })} /></div>}
