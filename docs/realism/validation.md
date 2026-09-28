@@ -57,3 +57,5 @@
 ## 交付核验
 
 Mac 保持 `release/mac-arm64/Tavern Bones.app` 与独立用户数据目录。归档脚本检查解压后的严格签名、ASAR、每个 dist / desktop 资源与包版本，并记录来源提交和 SHA-256。最终结果见 [Mac 清单](../../artifacts/macos/manifest.json)与 [校验文件](../../artifacts/macos/SHA256SUMS.txt)。应用沿用 ad-hoc 签名，不新增版本标签或公开 Release。
+
+本次应用来源提交：`feebaa756407f89b1009148ed7239549aa53763b`。归档 181,773,554 字节，SHA-256：`9550ebfe003ff06a1368f5a9017c715e3fc899573a806bfe0ed1662cf588b0e9`。已从 ZIP 解压复核 `codesign --verify --deep --strict`，并逐项比对全部网页资源、桌面入口、ASAR 与包版本，全部通过。

@@ -27,3 +27,5 @@
 - Source/assets/evidence ready for commit; Mac ZIP archive and remote Git/LFS verification next.
 
 - Final landing-camera follow build: 196 tests, lint, build and packaging passed; first-table browser recording and exact native 1080p rechecked. Final native sample median 16.7 ms / P95 16.8 ms / maximum 166.6 ms (one cold-load frame), superseding the prior performance sample.
+
+- Created and extracted the 181,773,554-byte ditto archive from feebaa7; strict code signature, ASAR, all dist/desktop files and package version match. SHA-256: 9550ebfe003ff06a1368f5a9017c715e3fc899573a806bfe0ed1662cf588b0e9.

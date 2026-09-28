@@ -4,30 +4,90 @@
   "architecture": "arm64",
   "applicationVersion": "0.1.0",
   "electronVersion": "44.3.0",
-  "sourceCommit": "9de6ec6ba1423cd2ba1a25802a5f321931e7af1d",
-  "archivedAt": "2026-09-14T15:38:20.493Z",
+  "sourceCommit": "feebaa756407f89b1009148ed7239549aa53763b",
+  "archivedAt": "2026-09-28T17:42:02.623Z",
   "archive": {
     "file": "Tavern-Bones-mac-arm64.zip",
-    "bytes": 128730008,
-    "sha256": "1e3d28a0e46049a143e44c72fefe1f3eb90a6273d7c2881049b8fa28477911cf"
+    "bytes": 181773554,
+    "sha256": "9550ebfe003ff06a1368f5a9017c715e3fc899573a806bfe0ed1662cf588b0e9"
   },
-  "appAsarSha256": "3b8566ed028168aee86ae6794c60151abe4742fc2ab7e9cef7a8f9232c9cc6ac",
+  "appAsarSha256": "34c3469aa543fe4a7ff286c5291124d3585677debf8e9da2fb844023f893063e",
   "rendererFiles": [
     {
-      "path": "dist/assets/TavernScene-BiUaXi4H.js",
-      "sha256": "42920417225c29c73e85e3de9c3c4c6b8b337092947ef8c6f859fa693006194a"
+      "path": "dist/art/characters/keeper.glb",
+      "sha256": "7733897daf6e0e743545ff16923b7921cb47fb0057f4d17a3328f3bb06bad8a1"
     },
     {
-      "path": "dist/assets/index-CodMia77.css",
-      "sha256": "e3d30008ff6f4a2e98943004e752f01a0e524d337ddb1bd0a3ec5cc38b408335"
+      "path": "dist/art/characters/mara.glb",
+      "sha256": "f45e5af8435d3b2993989a62e8b40ae1be2647ec66edba8f3d6c3723935b7000"
     },
     {
-      "path": "dist/assets/index-DHxzTwzO.js",
-      "sha256": "259853c911814a60915f046002240fa3265ba4b7f65f2b5f12d11bc836a847b7"
+      "path": "dist/art/characters/osric.glb",
+      "sha256": "6cf87f3ab1849dce1899e5632a7b988309f745ae2b81639720409f8882c0b2e9"
     },
     {
-      "path": "dist/assets/physics.worker-xmDIXbKA.js",
-      "sha256": "721eb3c513d60fd76b273371136edaee80525a40315e3065926ddc8f5a862b8a"
+      "path": "dist/art/characters/player-hands.glb",
+      "sha256": "4ac368120e5df3ac7eeabe2e5256ad88c69d7a9a6a7fd56be8b86e50589472d8"
+    },
+    {
+      "path": "dist/art/characters/rue.glb",
+      "sha256": "ad238c939ef79fd76f5090344ca248fce707304f39599bf1879d40267aa0f7ef"
+    },
+    {
+      "path": "dist/art/materials/fabric-color.jpg",
+      "sha256": "d6d0254e2c90768482b0be8cfdc16e18117acc92bad00d406fd4b9be24facdec"
+    },
+    {
+      "path": "dist/art/materials/fabric-normal.jpg",
+      "sha256": "de0e9c5ed5cce7dacd50a67be16c6d8b8dc036907638e3702729c2f60296094e"
+    },
+    {
+      "path": "dist/art/materials/fabric-roughness.jpg",
+      "sha256": "51b971b7e83d733d88940be2a417c6ce8ea3a82c27a7cb3525f4bacc97aad2b7"
+    },
+    {
+      "path": "dist/art/materials/leather-color.jpg",
+      "sha256": "7e9e1d6566d1fd91d4ceb4966c4820361e85d53a7a828b6bab3b2a093a876cd1"
+    },
+    {
+      "path": "dist/art/materials/leather-normal.jpg",
+      "sha256": "506a0b7650c2dea285e247f26ed2d0d6ec38fc10dd584359f0d203e9c082236d"
+    },
+    {
+      "path": "dist/art/materials/leather-roughness.jpg",
+      "sha256": "f9739ef2da2e3d17b9ec253f5042f61b10dc10f3ae28f6cf6491650d3d1b0ca3"
+    },
+    {
+      "path": "dist/art/materials/tavern-environment.hdr",
+      "sha256": "a02c9615adeba91a753c3e4737c3ce7a719273df822eeaa85d24982bd43c9ecb"
+    },
+    {
+      "path": "dist/art/materials/wood-color.jpg",
+      "sha256": "092ab3465a6a24b24d092ea86865f332c3bd239b8eb2fd664b70357082031a3f"
+    },
+    {
+      "path": "dist/art/materials/wood-normal.jpg",
+      "sha256": "0d494f3fe08320a05f0f966a7a3ca3c4cd6e3f7cde5b176b9bc167b5593fd00d"
+    },
+    {
+      "path": "dist/art/materials/wood-roughness.jpg",
+      "sha256": "ebc4a15d7d3495ee1b67ba18f67bffcefac3f93881d1394fa3e22a25f9fe5c72"
+    },
+    {
+      "path": "dist/assets/TavernScene-BbukI9nX.js",
+      "sha256": "71294f7415f412717898f8797f40f9a9ea779869aee12212601be7edcffd8434"
+    },
+    {
+      "path": "dist/assets/index-Bbe-qSWl.js",
+      "sha256": "25ecc23fdfa5b938464668c1a4f91031e03f09451dd9c45291af2d9d09097e0a"
+    },
+    {
+      "path": "dist/assets/index-DpoLSqpt.css",
+      "sha256": "dec984fc1fd8c7945eb3c2587000b20488fbfa52dfdf66f57b9073674de523c7"
+    },
+    {
+      "path": "dist/assets/physics.worker-GJMY0xH5.js",
+      "sha256": "a2b2f3fa4ede888a0c4ff465e178029522238828a07c2f29b297dbe35c52a026"
     },
     {
       "path": "dist/favicon.svg",
@@ -35,7 +95,7 @@
     },
     {
       "path": "dist/index.html",
-      "sha256": "17cc2f6a3bab2e41d4c98481f293071bacdc4ac8f3765c2010fd7038d8ad841b"
+      "sha256": "df3cf5673a7e5fc75bcc4a93cfedcf77123e02796eff6e0727609fb41c86b836"
     },
     {
       "path": "dist/og.jpg",
@@ -61,20 +121,8 @@
     "archiveMatchesLocalApp": true,
     "rendererMatchesDist": true,
     "desktopMatchesSource": true,
-    "bundleVersionMatchesPackage": true,
-    "unitTests": {
-      "passed": 186,
-      "files": 28
-    },
-    "browserCases": 92,
-    "finalFocusedBrowserTests": 20,
-    "lint": "passed",
-    "build": "passed",
-    "desktopTests": {
-      "passed": 8,
-      "fullNightIsolatedRerun": "passed; see validation report"
-    }
+    "bundleVersionMatchesPackage": true
   },
-  "validationReport": "docs/friends-validation.md",
+  "validationReport": "docs/realism/validation.md",
   "saveDataIncluded": false
 }
