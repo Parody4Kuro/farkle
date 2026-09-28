@@ -1,6 +1,6 @@
 # Tavern Bones
 
-原创中世纪酒馆风格的骰子游戏，支持单机冒险、经典对局和双人好友直连，可在本地浏览器和独立 Mac 应用中游玩。包含第一人称“四桌一夜”冒险，以及保留自由配置与独立统计的经典对局。所有人物、场景、骰面和声音由本项目代码原创生成。
+原创中世纪酒馆风格的骰子游戏，支持单机冒险、经典对局和双人好友直连，可在本地浏览器和独立 Mac 应用中游玩。包含第一人称“四桌一夜”冒险，以及保留自由配置与独立统计的经典对局。人物以 MakeHuman 官方 CC0 资产为基础改造，场景、服装、骰面和动作由本项目制作；PBR 贴图使用有来源记录的 Poly Haven CC0 素材，声音由 Web Audio 合成。
 
 ## 下载与文档
 
@@ -8,8 +8,8 @@
 - [更新记录](CHANGELOG.md) · [文档目录](docs/README.md) · [Mac 安装与升级说明](artifacts/macos/README.md)
 - `src/` 保存游戏源码，`desktop/` 保存桌面壳，`dist/` 保存最新网页构建，`artifacts/macos/` 保存最新 Mac 归档与校验文件。历史发布包通过 GitHub Releases 保留。
 
-- **[下载包含好友直连的当前 Mac 构建](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)** · [构建清单](artifacts/macos/manifest.json)。当前构建尚未发布新 Release；上方 Release 入口保留历史正式版。
-- [整备、键盘与好友直连说明](docs/friends-and-controls.md) · [本次验收记录](docs/friends-validation.md)
+- **[下载写实场景与完整动画的当前 Mac 构建](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)** · [构建清单](artifacts/macos/manifest.json)。当前构建尚未发布新 Release；上方 Release 入口保留历史正式版。
+- [整备、键盘与好友直连说明](docs/friends-and-controls.md) · [写实动画验收记录](docs/realism/validation.md) · [模型源文件与授权](artifacts/art-source/README.md) · [实际游戏录像](artifacts/realism/first-table.webm)
 
 ## 酒馆之夜
 
@@ -20,8 +20,8 @@
 - 每桌和重试入座前，通过六个骰位、两个徽章位重新搭配；确认入座后本桌配置固定。满载之手的第七颗骰只在回合中生成。
 - 每位对手的骰组和风格都公开。老板根据比分调整风险偏好；所有 AI 使用真实加权骰子，先选最高合法分数，再决定继续或落袋。
 - 选择后可查看计分组合、Joker 替代、徽章加成和可保存总分。下一投爆骰概率按实际剩余骰组精确计算；Hot Dice 按恢复后的完整骰组计算，护符重投保护单独显示。
-- 入座面对角色，游戏时俯身看桌面，也可手动切换。四位原创几何角色共用动作，通过服装、面部与姿态区分。投骰保留真实物理轨迹与原有 2D 降级。
-- 酒馆之夜偏好支持快速演出、关闭人物对白、较大字号、独立环境与音乐音量。声音只在用户交互后启动。
+- 入座面对角色，游戏时俯身看桌面，也可手动切换。四位人物共用带手指关节的骨架，通过脸型、服装、发型、体态与动作幅度区分。手臂与手指 IK 接触骰盅和桌面，骰子采用约 32 毫米尺寸与凹陷点孔。投掷从杯口连续出骰，保留真实物理轨迹与 2D 降级。
+- 冒险、经典、好友三种模式共用快速演出、电影镜头、减少动态效果和画质偏好。新用户默认沉浸演出、电影镜头开启、自动画质，旧有快速偏好保留；系统减少动态效果优先。每次演出可以跳过。冒险另支持关闭人物对白、较大字号、独立环境与音乐音量。声音只在用户交互后启动。
 - 失焦、隐藏、最小化或打开规则/偏好面板时，骰子演出、AI、等待时间和声音一起暂停。回到窗口、关闭面板后需手动点击“继续”，也可以随时主动暂停。
 - 完成第一夜解锁“商路旧识”，首次通关解锁“夜行旅人”和月下骰盅。遇到的人物留下轶事，结算记录本夜装备、最大落袋和最大爆骰损失。没有永久数值升级。
 
@@ -71,7 +71,7 @@ npm install
 npm run dev
 ```
 
-浏览器打开终端显示的本地地址（默认 `http://localhost:5173`）。所有美术、骰面及音效均由本项目代码原创生成，没有远程素材、字体或音频依赖。
+浏览器打开终端显示的本地地址（默认 `http://localhost:5173`）。全部模型与贴图随构建保存到本地，运行时没有远程素材、字体或音频依赖。素材授权、校验值和可编辑 Blender 工程见 [资产说明](artifacts/art-source/README.md)。
 
 ## 验证
 
@@ -97,17 +97,17 @@ Chrome 和 Edge 项目使用本机安装的浏览器；Firefox 和 WebKit 使用
 
 - `src/game/` 继续负责加权抽样、合法选择、计分、AI 和状态转换，不依赖渲染器或浏览器。`adventure.ts` 在单局 reducer 外管理四桌冒险，`opponents.ts` 提供对手配置，`risk.ts` 用骰面计数分布与同一组合法组合规则计算精确概率。
 - `useDiceGame` 在投掷开始时抽取一次结果，再等待可注入的 `presentRoll(request, signal)`。玩家、AI 和护符重投共用这一接口；演出结束后才提交 `ROLL_RESOLVED`。新局与卸载取消旧演出；暂停保留等待，演出保护超时只累计实际运行时间。
-- `src/presentation/GamePlayback.ts` 为两种模式、演出、场景和音效提供统一暂停与运行时钟。暂停后的 Worker 结果或 WebGL 降级也需等到继续后才能提交。
+- `src/presentation/GamePlayback.ts` 为三种模式的本地演出、场景和音效提供统一暂停与运行时钟。暂停后的 Worker 结果或 WebGL 降级也需等到继续后才能提交。
 - `src/game/selection.ts` 让预览、锁定、落袋和能力使用共享判断。DFS 比较装备生效后的合法组合收益；黄金一点可以修改单颗未计分骰，孤注一掷后选择和骰值冻结。
-- `src/presentation/` 连接游戏与可选的渲染器，并从明确领域事件产生漫画反馈，不解析消息文案。
-- `src/scene/` 使用 Three.js 和 React Three Fiber 绘制原创几何、六面骰子、卡通材质、轮廓与光影。HTML 按钮投影到骰子位置，承担鼠标、键盘、焦点和读屏语义。
+- `src/presentation/` 连接游戏与可选的渲染器，通过动作前后快照和唯一编号，统一编排收骰、Hot Dice、入账、爆骰、能力和胜负。规则更新后旧骰子仍能完成离场，动画完成不再次计分。好友使用可选的房主动作摘要，接收端按序去重；暂停或重连直接追到最新局面。
+- `src/scene/` 使用 Three.js 和 React Three Fiber 加载分桌 GLB 骨骼人物和本地 PBR 材质，绘制凹陷骰面、木桌、皮革骰盅、铜件与布料；桌面、骰盅、对手反应和账本使用预设电影机位。HTML 按钮投影到骰子位置，承担鼠标、键盘、焦点和读屏语义。
 - `src/scene/physics/` 在 Worker 中使用 Rapier 以 120 Hz 预演碰撞，60 Hz 记录轨迹，播放时插值。运动使用独立随机源，不消耗或修改游戏的随机结果。
 - `useAdventure` 先同步持久化抽样结果，再交给同一个可取消演出接口。恢复时继续待完成结果，不进行第二次抽样；revision、runId 和 AbortSignal 防止过时任务提交。
 - 第一人称使用透视镜头和屏幕投影点击区域。`scene/camera.ts` 同时提供镜头参数与落点投影校验，备用轨迹已重新生成，需同时通过经典与第一人称的间距约束。
 
 物理预演确认落地面后，为骰子模型选择一个从第一帧就固定的立方体对称旋转。六面关系始终一致，落地面与加权结果匹配；没有落地后替换纹理或重新抽点数。一个轨迹最多模拟 3 秒，最多尝试 3 次，后台准备预算为 700 毫秒。失败时播放随包提供的、同样来自真实物理模拟的已验证轨迹。
 
-重新生成 1～7 骰的备用轨迹：
+重新生成 双方各 1～7 骰的备用轨迹：
 
 ```bash
 npm run generate:trajectories
@@ -130,8 +130,8 @@ WebGL 不可用、上下文丢失或 3D 模块加载失败时，自动使用可�
 - `src/game/duel.ts`：固定席位的双人纯规则和操作意图
 - `src/multiplayer/`：手动邀请、原生 WebRTC、房主裁定与重连快照
 - `src/hooks/useDiceGame.ts`：玩家/AI 流程编排与异步时序
-- `src/presentation/`：可取消的掷骰演出接口与领域事件反馈
-- `src/scene/`：卡通 3D 场景、物理 Worker、备用轨迹与骰面朝向
+- `src/presentation/`：可取消的掷骰演出序列、显示快照与领域事件反馈
+- `src/scene/`：写实 3D 场景、骨骼与接触 IK、物理 Worker、备用轨迹与骰面朝向
 - `src/storage/`：设置、统计和音效偏好的容错本地存储
 - `src/audio/`：惰性初始化的程序化 Web Audio 音效引擎
 - `src/components/`：计分板、操作区、规则、设置和结算界面

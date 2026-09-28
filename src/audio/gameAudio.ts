@@ -3,6 +3,9 @@ import type { AudioPreferences } from '../game/types'
 export type SoundCue =
   | 'roll'
   | 'select'
+  | 'flip'
+  | 'double'
+  | 'charm'
   | 'lock'
   | 'bank'
   | 'bust'
@@ -13,6 +16,9 @@ export type SoundCue =
 export const SOUND_CUES: SoundCue[] = [
   'roll',
   'select',
+  'flip',
+  'double',
+  'charm',
   'lock',
   'bank',
   'bust',
@@ -263,6 +269,17 @@ export class WebGameAudio implements GameAudio {
         break
       case 'select':
         this.tone(start, 620, 0.045, 0.08, 'triangle', 410)
+        break
+      case 'flip':
+        this.noise(start, .07, .08, 1300)
+        this.tone(start + .035, 850, .13, .07, 'triangle', 510)
+        break
+      case 'double':
+        this.tone(start, 440, .18, .07, 'triangle')
+        this.tone(start + .09, 880, .24, .09, 'sine')
+        break
+      case 'charm':
+        for (const [i, frequency] of [660, 880, 1320].entries()) this.tone(start + i * .075, frequency, .22, .055, 'sine')
         break
       case 'lock':
         this.noise(start, 0.09, 0.11, 1100)

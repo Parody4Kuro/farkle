@@ -4,6 +4,7 @@ import { JOKER, type DieFace } from '../../game/types'
 import { composeRotation, FACE_NORMALS, faceOffset, topFace } from './faces'
 import { fallbackTrajectory } from './PhysicsClient'
 import { initPhysics, simulate, validLanding } from './simulate'
+import { cupMouth, RELEASE_INTERVAL } from '../layout'
 import type { Quat } from './types'
 
 describe('visible dice faces', () => {
@@ -35,21 +36,22 @@ describe('physical trajectories', () => {
   beforeAll(initPhysics)
 
   it('ships verified, finite, fully landed fallback simulations for one through seven dice', () => {
-    for (let count = 1; count <= 7; count++) {
-      const trajectory = fallbackTrajectory(count)
+    for (const player of ['human', 'ai'] as const) for (let count = 1; count <= 7; count++) {
+      const trajectory = fallbackTrajectory(count, player)
       expect(trajectory.frames.length).toBeGreaterThan(30)
       expect(trajectory.frames.length).toBeLessThanOrEqual(181)
       expect(trajectory.impacts.length).toBeGreaterThan(0)
       expect(trajectory.frames.every((frame) => frame.length === count)).toBe(true)
       for (const pose of trajectory.frames.flat()) expect(Math.hypot(...pose.rotation)).toBeCloseTo(1, 4)
-      expect(trajectory.frames[0].every((pose) => pose.position[1] > 2)).toBe(true)
+      for (const pose of trajectory.frames[0]) expect(pose.position).toEqual(cupMouth(player))
+      expect(trajectory.releases).toEqual(Array.from({ length: count }, (_, i) => Number((i * RELEASE_INTERVAL).toFixed(7))))
       expect(validLanding(trajectory.frames.at(-1)!)).toBe(true)
     }
   })
 
   it('reproduces a real seven-body simulation from its independent seed', () => {
-    const a = simulate(7, 70094)
-    const b = simulate(7, 70094)
+    const a = simulate(7, 70069)
+    const b = simulate(7, 70069)
     expect(a).toBeDefined()
     expect(a).toEqual(b)
     expect(validLanding(a!.frames.at(-1)!)).toBe(true)

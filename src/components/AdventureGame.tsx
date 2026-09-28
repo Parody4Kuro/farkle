@@ -10,7 +10,8 @@ import type { TableView } from '../scene/camera'
 import type { ComfortPreferences } from '../storage/adventureStorage'
 import { ActionBar } from './ActionBar'
 import { ComfortDialog } from './ComfortDialog'
-import { ComicEffects } from './ComicEffects'
+import { AnimatedScore } from './PresentationHUD'
+import { usePresentationAction, usePresentationPreferences } from '../hooks/usePresentation'
 import { RulesModal } from './RulesModal'
 import { ScoreExplanation } from './ScoreExplanation'
 import { TableStage } from './TableStage'
@@ -45,8 +46,11 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
   profileWarning?: string
 }) {
   const [presentation] = useState(() => new RollPresentation())
-  const { run, act, warning, presentationEvent, audioPreferences, setVolume, toggleAudio, playback, paused, canResume, pause, resume } = useAdventure({ initial, presentRoll: presentation.present, playback: presentation.playback, resumeRequired: initial.stage === 'playing', comfort })
-  const leave = () => onHome(run)
+  const { run: actualRun, act, warning, audioPreferences, setVolume, toggleAudio, playback, paused, canResume, pause, resume } = useAdventure({ presentation, initial, presentRoll: presentation.present, playback: presentation.playback, resumeRequired: initial.stage === 'playing', comfort })
+  usePresentationPreferences(presentation, comfort)
+  const action = usePresentationAction(presentation)
+  const run = useMemo(() => action && actualRun.stage !== 'playing' ? { ...actualRun, stage: 'playing' as const } : actualRun, [action, actualRun])
+  const leave = () => onHome(actualRun)
   const [settings, setSettings] = useState(false)
   const [rules, setRules] = useState(false)
   useLayoutEffect(() => {
@@ -82,14 +86,13 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
         opponent={opponent} view={view} appearance={comfort.appearance} />
       {run.stage === 'playing' && <>
         <div className="night-scoreband">
-          <div className={human ? 'active' : ''}><span>你的账本</span><strong>{game.scores.human.toLocaleString()}</strong></div>
+          <div className={human ? 'active' : ''}><span>你的账本</span><strong><AnimatedScore value={game.scores.human} player="human" presentation={presentation} /></strong></div>
           <div className="night-target"><span>第 {game.turnNumber} 轮 · 目标</span><strong>{game.config.targetScore.toLocaleString()}</strong></div>
-          <div className={!human ? 'active' : ''}><span>{opponent.name} · {opponent.title}</span><strong>{game.scores.ai.toLocaleString()}</strong></div>
+          <div className={!human ? 'active' : ''}><span>{opponent.name} · {opponent.title}</span><strong><AnimatedScore value={game.scores.ai} player="ai" presentation={presentation} /></strong></div>
         </div>
         <div className="view-switch" aria-label="视角"><button aria-pressed={view === 'opponent'} onClick={() => setManualView({ context, view: 'opponent' })}>看向对手</button><button aria-pressed={view === 'table'} onClick={() => setManualView({ context, view: 'table' })}>俯身看骰</button></div>
         <details className="opponent-intel"><summary>{opponent.name}的骰盅 · 公开信息</summary><p>{run.table === 3 ? '老板会依据比分调整冒险程度。' : styles[opponent.difficulty]}</p><ul>{opponent.loadout.map((id, i) => <li key={i}>{getDieDefinition(id).name}</li>)}</ul></details>
         {comfort.dialogue && dismissedLine !== `${context}:${line}` && <div className="opponent-dialogue"><span>{opponent.name}</span>「{line}」<button aria-label="跳过这句对白" onClick={() => setDismissedLine(`${context}:${line}`)}>×</button></div>}
-        <ComicEffects event={presentationEvent} playback={playback} />
       </>}
       {run.stage === 'seat' && <>
         <section className="encounter-panel">
@@ -107,9 +110,9 @@ export function AdventureGame({ initial, comfort, onComfort, onHome, onFinished,
       </>}
     </div>
     {run.stage === 'playing' && <section className="night-dock" aria-label="本回合操作">
-      <div className="night-status" role="status" aria-live="polite"><span className={`turn-dot ${human ? '' : 'ai'}`} />{game.message}<span className="pot-label">本回合待落袋 <b>{game.turnScore.toLocaleString()}</b></span></div>
+      <div className="night-status" role="status" aria-live="polite"><span className={`turn-dot ${human ? '' : 'ai'}`} />{game.message}<span className="pot-label">本回合待落袋 <b><AnimatedScore value={game.turnScore} field="turn" player={game.currentPlayer} presentation={presentation} /></b></span></div>
       <div className="night-decisions"><div className="compact-ledger"><strong>本次 {choice.valid ? choice.score : 0} · 可落袋 {choice.valid ? choice.bankTotal : 0}</strong>{selected.length > 0 && !choice.valid && <p role="status">选择尚未完整计分：请调整 {choice.unusedDice.map((value) => value === 'JOKER' ? '骷髅' : value).join('、')}。</p>}<details><summary>计分明细与风险</summary><ScoreExplanation state={game} /></details></div><ActionBar phase={game.phase} humanTurn={human} selectionValid={choice.valid} hasSelection={selected.length > 0}
-        canBank={choice.valid} abilities={getModifiers(game.config.modifierIds)} modifierUsage={game.modifierUsage} abilityDisabledReasons={abilityReasons(game)} paused={paused}
+        canBank={choice.valid} abilities={getModifiers(game.config.modifierIds)} modifierUsage={game.modifierUsage} abilityDisabledReasons={abilityReasons(game)} paused={paused || Boolean(action)}
         onRoll={() => act({ type: 'ROLL' })} onBank={() => act({ type: 'BANK' })} onUseModifier={(id) => act({ type: 'ABILITY', id })} /></div>
     </section>}
     {run.stage === 'core' && <div className="night-overlay"><CoreChoice scoringVersion={run.scoringVersion} offers={run.opening.offers} onChoose={(id) => act({ type: 'SELECT_CORE', id })} /></div>}

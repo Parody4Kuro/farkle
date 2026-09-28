@@ -1,9 +1,10 @@
 import { applyMatchCommand, createDuel, type DuelState, type MatchCommand, type SeatId } from '../game/duel'
+import { summarizeAction, parseActionSummary, type DuelActionSummary } from './presentation'
 import { rollDice } from '../game/dice'
 import { decodeInvitation, encodeInvitation, parseCommand, isDuelSnapshot, PROTOCOL_VERSION, RULES_VERSION } from './protocol'
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'waiting' | 'connected' | 'disconnected' | 'failed' | 'ended'
-export interface FriendSnapshot { role: SeatId | null; state: DuelState; status: ConnectionStatus; error: string; pending: boolean; preview: { actor: SeatId; ids: string[] } | null }
+export interface FriendSnapshot { action?: DuelActionSummary; role: SeatId | null; state: DuelState; status: ConnectionStatus; error: string; pending: boolean; preview: { actor: SeatId; ids: string[] } | null }
 const ICE_SERVERS = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }]
 /** The host authority lives outside React and outside every presentation/visibility clock. */
 export class FriendSession {
@@ -23,7 +24,7 @@ export class FriendSession {
   getSnapshot = () => this.snapshot
   private publish(patch: Partial<FriendSnapshot>) { if (!this.alive) return; this.snapshot = { ...this.snapshot, ...patch }; for (const fn of this.listeners) fn() }
   private send(packet: object) { if (this.channel?.readyState === 'open') this.channel.send(JSON.stringify({ session: this.session, channel: this.channelId, ...packet })) }
-  private broadcast() { this.send({ type: 'STATE', rules: RULES_VERSION, state: this.snapshot.state }) }
+  private broadcast(action?: DuelActionSummary) { this.send({ type: 'STATE', rules: RULES_VERSION, state: this.snapshot.state, ...(action ? { action } : {}) }) }
   private fail(message: string) { clearTimeout(this.timer); this.publish({ status: 'failed', error: message, pending: false }); this.closeTransport() }
   private closeTransport() { ++this.generation; clearTimeout(this.timer); clearTimeout(this.pendingTimer); this.channel?.close(); this.pc?.close(); this.channel = undefined; this.pc = undefined }
   private armTimeout() { clearTimeout(this.timer); this.timer = setTimeout(() => this.fail('30 秒内未能建立连接。请重新交换连接文本，或尝试另一网络；部分网络需要中继，当前版本只支持直连。'), 30000) }
@@ -116,9 +117,11 @@ export class FriendSession {
       if (this.snapshot.status !== 'connected') throw new Error('连接恢复前不能操作。')
       if (revision !== this.snapshot.state.revision) throw new Error('局面已更新，请重新操作。')
       const command = parseCommand(value)
-      const state = applyMatchCommand(this.snapshot.state, actor, command, (ids) => rollDice(ids, ids.length, () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296))
+      const before = this.snapshot.state
+      const state = applyMatchCommand(before, actor, command, (ids) => rollDice(ids, ids.length, () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296))
       this.seen.add(id); if (this.seen.size > 512) this.seen.delete(this.seen.values().next().value!)
-      this.publish({ state, error: '', preview: null }); this.broadcast()
+      const action = summarizeAction(before, state, actor, command)
+      this.publish({ state, action, error: '', preview: null }); this.broadcast(action)
     } catch (error) {
       const message = (error as Error).message
       if (actor === 'host') this.publish({ error: message })
@@ -138,7 +141,8 @@ export class FriendSession {
         if (p.type === 'STATE' && p.rules !== RULES_VERSION) throw new Error('双方规则版本不一致。')
         // Host is trusted, but malformed/older snapshots must never reach rendering.
         if (!isDuelSnapshot(p.state) || p.state.revision < this.snapshot.state.revision) throw new Error('无效局面快照。')
-        clearTimeout(this.timer); clearTimeout(this.pendingTimer); this.publish({ state: p.state, status: 'connected', pending: false, error: p.type === 'REJECT' ? String(p.error).slice(0,200) : '', preview: null })
+        const action = this.snapshot.status === 'connected' && p.state.revision > this.snapshot.state.revision ? parseActionSummary(p.action, p.state) : undefined
+        clearTimeout(this.timer); clearTimeout(this.pendingTimer); this.publish({ action, state: p.state, status: 'connected', pending: false, error: p.type === 'REJECT' ? String(p.error).slice(0,200) : '', preview: null })
       } else if (p.type === 'PREVIEW') {
         const actor = this.snapshot.role === 'host' ? 'guest' : 'host'
         if (p.revision === this.snapshot.state.revision && actor === this.snapshot.state.active && Array.isArray(p.ids) && p.ids.length <= 7 && p.ids.every((id: unknown) => typeof id === 'string' && this.snapshot.state.game.rolledDice.some((d) => d.id === id))) this.publish({ preview: { actor, ids: p.ids } })

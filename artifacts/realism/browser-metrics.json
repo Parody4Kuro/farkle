@@ -1,0 +1,24 @@
+{
+  "browser": "chrome",
+  "viewport": "1920x1080",
+  "rollMs": 3222,
+  "fullRollFrames": {
+    "samples": 173,
+    "medianMs": 16.699999999999818,
+    "p95Ms": 16.700000000000728,
+    "maxMs": 16.800000000000182,
+    "over33Ms": 0,
+    "over100Ms": 0
+  },
+  "render": {
+    "engine": "three.js r185",
+    "frameP50": "16.60",
+    "frameP95": "17.50",
+    "triangles": "334856",
+    "drawCalls": "192",
+    "renderDpr": "1"
+  },
+  "jsHeapBytes": 71008866,
+  "errors": [],
+  "capturedAt": "2026-09-28T17:39:43.186Z"
+}

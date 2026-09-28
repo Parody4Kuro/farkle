@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { DUEL_INVENTORY, duelView, otherSeat, type DuelRoll, type MatchCommand } from '../game/duel'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { DUEL_INVENTORY, duelView, type MatchCommand } from '../game/duel'
 import { getDieDefinition } from '../game/dice'
 import { abilityReasons, evaluateSelection } from '../game/selection'
 import { getModifier, getModifiers } from '../game/modifiers'
@@ -14,9 +14,14 @@ import { LoadoutEditor } from './LoadoutEditor'
 import { ActionBar } from './ActionBar'
 import { RulesModal } from './RulesModal'
 import { ScoreExplanation } from './ScoreExplanation'
+import { usePresentationPreferences, usePresentationAction } from '../hooks/usePresentation'
+import { useFriendPresentation } from '../hooks/useFriendPresentation'
+import { AnimatedScore } from './PresentationHUD'
+import { PresentationOptions } from './PresentationOptions'
+import type { ComfortPreferences } from '../storage/adventureStorage'
 import { AccessibleDialog } from './AccessibleDialog'
 
-export function FriendGame({ onHome }: { onHome: () => void }) {
+export function FriendGame({ onHome, comfort, onComfort }: { onHome: () => void; comfort: ComfortPreferences; onComfort: (value: ComfortPreferences) => void }) {
   const [session] = useState(() => new FriendSession())
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
   const { state, role, status, pending } = snapshot
@@ -27,47 +32,32 @@ export function FriendGame({ onHome }: { onHome: () => void }) {
   const [input, setInput] = useState(''), [output, setOutput] = useState(''), [error, setError] = useState('')
   const [busy, setBusy] = useState(false), [copied, setCopied] = useState(false), [rules, setRules] = useState(false), [leaving, setLeaving] = useState(false)
   const [selected, setSelected] = useState<{ revision: number; ids: string[] }>({ revision: -1, ids: [] })
-  const [animation, setAnimation] = useState<DuelRoll | null>(null)
-  const lastSerial = useRef(0)
   const viewer = role ?? 'host'
+  usePresentationPreferences(presentation, comfort)
+  const action = usePresentationAction(presentation)
+  const animation = useFriendPresentation(snapshot, viewer, presentation, audio, paused)
   const selectedIds = state.game.doubledSelection ? state.game.rolledDice.filter((d) => d.selected).map((d) => d.id) : selected.revision === state.revision ? selected.ids : []
   const shownIds = state.active === viewer ? selectedIds : snapshot.preview?.ids ?? []
   const game = duelView(state, viewer, shownIds)
   const choice = evaluateSelection({ ...state.game, rolledDice: state.game.rolledDice.map((d) => ({ ...d, selected: shownIds.includes(d.id) })) })
-  const blocked = paused || rules || leaving || Boolean(animation) || status !== 'connected' || pending
+  const blocked = Boolean(action) || paused || rules || leaving || Boolean(animation) || status !== 'connected' || pending
   useEffect(() => { session.activate(); return session.dispose }, [session])
   useEffect(() => () => { void audio.dispose() }, [audio])
   useEffect(() => { presentation.playback.setBlocked('请先关闭面板', rules || leaving) }, [rules, leaving, presentation])
-  useEffect(() => {
-    const controller = new AbortController()
-    if (paused || status !== 'connected') { lastSerial.current = state.rollSerial; return () => controller.abort() }
-    const rolls = state.rolls.filter((roll) => roll.serial > lastSerial.current)
-    lastSerial.current = state.rollSerial
-    void (async () => {
-      for (const roll of rolls) {
-        if (controller.signal.aborted) return
-        setAnimation(roll); audio.play('roll')
-        await presentation.present({ id: roll.serial, dice: roll.dice, player: roll.actor === viewer ? 'human' : 'ai', onImpact: (strength) => audio.playImpact?.(strength) }, controller.signal)
-        if (controller.signal.aborted) return
-        if (roll.bust) audio.play('bust')
-      }
-      if (!controller.signal.aborted) setAnimation(null)
-    })()
-    return () => controller.abort()
-  }, [state.rollSerial, state.rolls, paused, status, presentation, audio, viewer])
   const operation = async (run: () => Promise<string | void>) => {
     setBusy(true); setError(''); setCopied(false)
     try { void audio.unlock(); const result = await run(); if (result) setOutput(result) } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
-  const command = (cmd: MatchCommand) => { void audio.unlock(); session.command(cmd) }
+  const command = (cmd: MatchCommand) => { if (blocked && state.stage !== 'lobby') return; void audio.unlock(); session.command(cmd) }
   const toggle = (id: string) => {
     if (blocked || state.active !== viewer || state.game.phase !== 'selecting' || state.game.doubledSelection) return
     const ids = selectedIds.includes(id) ? selectedIds.filter((v) => v !== id) : [...selectedIds, id]
     setSelected({ revision: state.revision, ids }); session.preview(ids); void audio.unlock().then(() => audio.play('select'))
   }
-  const visual = animation && !paused && status === 'connected' ? { ...game, rolledDice: animation.dice, currentPlayer: animation.actor === viewer ? 'human' as const : 'ai' as const, phase: 'rolling' as const, diceToRoll: animation.dice.length } : game
+  const visual = animation ?? game
   return <main className="friend-shell">
     <header className="friend-header"><h1>Tavern Bones · 好友对战</h1><div><button aria-label={audioPreferences.enabled ? '静音' : '开启音效'} onClick={() => { const next = { ...audioPreferences, enabled: !audioPreferences.enabled }; setAudioPreferences(next); audio.setEnabled(next.enabled); saveStored(getBrowserStorage(), AUDIO_KEY, next); if (next.enabled) void audio.unlock() }}>{audioPreferences.enabled ? '♪' : '静音'}</button><button aria-label="查看规则" onClick={() => setRules(true)}>规则 T</button>{state.stage !== 'lobby' && <button aria-label="暂停对局" onClick={pause}>暂停画面</button>}<button onClick={() => role ? setLeaving(true) : onHome()}>返回酒馆</button></div></header>
+    <details className="friend-presentation-options"><summary>演出偏好</summary><PresentationOptions value={comfort} onChange={(value) => onComfort({ ...comfort, ...value })} /></details>
     {(error || snapshot.error) && <p role="alert" className="friend-error">{error || snapshot.error}</p>}
     <p className="friend-status" role="status">{({ idle: '邀请一位朋友，坐到同一张桌前。', connecting: '正在建立连接…', waiting: '连接文本已生成，等待交换完成。', connected: '已直连 · 双方窗口需保持开启', disconnected: '已断线 · 当前局面保留', failed: '连接失败 · 可以重新交换连接文本', ended: '会话已结束，请返回酒馆创建新对局。' })[status]}</p>
     {status !== 'connected' && status !== 'ended' && <section className="friend-panel" aria-label="邀请朋友">
@@ -89,12 +79,12 @@ export function FriendGame({ onHome }: { onHome: () => void }) {
       <button className="night-primary" disabled={pending} onClick={() => command({ type: 'READY', ready: !state.players[viewer].ready })}>{state.players[viewer].ready ? '取消准备' : '准备好了'}</button>
     </section>}
     {state.stage !== 'lobby' && <>
-      <div className="friend-score"><div>你<strong>{state.players[viewer].score}</strong></div><div>目标<strong>{state.target}</strong></div><div>朋友<strong>{state.players[otherSeat(viewer)].score}</strong></div></div>
+      <div className="friend-score"><div>你<strong><AnimatedScore value={visual.scores.human} player="human" presentation={presentation} /></strong></div><div>目标<strong>{state.target}</strong></div><div>朋友<strong><AnimatedScore value={visual.scores.ai} player="ai" presentation={presentation} /></strong></div></div>
       <div className="friend-table"><TableStage state={visual} presentation={presentation} selectionValid={choice.valid} onToggleDie={toggle} />
         {paused && !rules && !leaving && <div className="friend-pause"><div><h2>你的画面已暂停</h2><p>朋友仍可操作，回来后显示最新局面。</p><button disabled={!canResume} onClick={resume}>继续</button></div></div>}
       </div>
       <section className="friend-dock"><p role="status">{state.notice} {state.stage === 'playing' ? state.active === viewer ? '轮到你。' : '等待朋友操作。' : ''}</p>
-        {state.stage === 'playing' ? <><strong>本回合 {state.game.turnScore} · 本次 {choice.valid ? choice.score : 0} · 可落袋 {choice.valid ? choice.bankTotal : 0}</strong>{shownIds.length > 0 && !choice.valid && <p role="status">选择尚未完整计分：请调整 {choice.unusedDice.map((value) => value === 'JOKER' ? '骷髅' : value).join('、')}。</p>}
+        {state.stage === 'playing' || action || animation ? <><strong>本回合 <AnimatedScore value={visual.turnScore} field="turn" player={game.currentPlayer} presentation={presentation} /> · 本次 {choice.valid ? choice.score : 0} · 可落袋 {choice.valid ? choice.bankTotal : 0}</strong>{shownIds.length > 0 && !choice.valid && <p role="status">选择尚未完整计分：请调整 {choice.unusedDice.map((value) => value === 'JOKER' ? '骷髅' : value).join('、')}。</p>}
           <ActionBar phase={visual.phase} humanTurn={state.active === viewer} selectionValid={choice.valid} hasSelection={selectedIds.length > 0} canBank={choice.valid} abilities={getModifiers(state.players[viewer].modifiers)} modifierUsage={state.active === viewer ? state.game.modifierUsage : state.players[viewer].usage} abilityDisabledReasons={abilityReasons({ ...state.game, rolledDice: game.rolledDice })} paused={blocked} onRoll={() => command({ type: 'ROLL', selectedIds })} onBank={() => command({ type: 'BANK', selectedIds })} onUseModifier={(modifierId) => command({ type: 'ABILITY', modifierId, selectedIds })} />
           <details className="friend-details"><summary>计分明细与风险</summary><ScoreExplanation state={{ ...state.game, rolledDice: game.rolledDice }} /></details>
         </> : <><h2>{state.winner === viewer ? '你赢了！' : '朋友赢了这一局。'}</h2><button disabled={status !== 'connected' || pending} onClick={() => command({ type: 'REMATCH' })}>再来一局 · 交换先手</button></>}

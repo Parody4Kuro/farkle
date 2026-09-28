@@ -1,5 +1,6 @@
 import { AccessibleDialog } from './AccessibleDialog'
 import type { ComfortPreferences } from '../storage/adventureStorage'
+import { PresentationOptions } from './PresentationOptions'
 
 export function ComfortDialog({ value, onChange, onClose, appearanceUnlocked, volume, onVolume }: {
   value: ComfortPreferences; onChange: (next: ComfortPreferences) => void; onClose: () => void
@@ -11,7 +12,7 @@ export function ComfortDialog({ value, onChange, onClose, appearanceUnlocked, vo
       <span className="eyebrow">MAKE YOURSELF AT HOME</span>
       <h2 id="comfort-heading" tabIndex={-1} data-autofocus>按你的节奏来</h2>
       <p>这些偏好即时生效，保存在这台设备上。</p>
-      <label><span>快速演出<small>缩短翻滚与对手思考，保留每次选择。</small></span><input type="checkbox" checked={value.fast} onChange={(e) => onChange({ ...value, fast: e.target.checked })} /></label>
+      <PresentationOptions value={value} onChange={onChange} />
       <label><span>人物对白<small>关闭后跳过重复对白，保留规则提示。</small></span><input type="checkbox" checked={value.dialogue} onChange={(e) => onChange({ ...value, dialogue: e.target.checked })} /></label>
       <label><span>较大字号</span><input type="checkbox" checked={value.largeText} onChange={(e) => onChange({ ...value, largeText: e.target.checked })} /></label>
       {onVolume && <label><span>主音量 · {Math.round((volume ?? 0.6) * 100)}%</span><input aria-label="主音量" type="range" min="0" max="100" value={(volume ?? 0.6) * 100} onChange={(e) => onVolume(Number(e.target.value) / 100)} /></label>}

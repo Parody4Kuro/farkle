@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createGameAudio, type GameAudio, type SoundCue } from '../audio/gameAudio'
 import { isPresentationEvent } from '../presentation/events'
-import type { PresentRoll } from '../presentation/rollPresentation'
+import type { PresentRoll, RollPresentation } from '../presentation/rollPresentation'
+import { usePresentationAction } from './usePresentation'
 import type { GamePlayback } from '../presentation/GamePlayback'
 import { presentSafely } from '../presentation/presentSafely'
 import { useGamePlayback } from './useGamePlayback'
@@ -61,6 +62,7 @@ export interface DiceGameDependencies {
   idFactory?: () => string
   delays?: Partial<Record<DelayKey, number>>
   presentRoll?: PresentRoll
+  presentation?: RollPresentation
   playback?: GamePlayback
 }
 
@@ -70,7 +72,9 @@ function fullPlayerLoadout(settings: GameSettings): string[] {
 }
 
 export function useDiceGame(dependencies: DiceGameDependencies = {}) {
-  const presentRoll = dependencies.presentRoll
+  const presentation = dependencies.presentation
+  const activeAction = usePresentationAction(presentation)
+  const presentRoll = dependencies.presentRoll ?? presentation?.present
   const storage = dependencies.storage ?? getBrowserStorage()
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings(storage))
   const [stats, setStats] = useState<GameStats>(() => loadStats(storage))
@@ -88,10 +92,13 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
   const [presentationEvent, setPresentationEvent] = useState<{ sequence: number; event: GameEvent } | null>(null)
   const [ownsAudio] = useState(() => !dependencies.audio)
   const [audio] = useState<GameAudio>(() => dependencies.audio ?? createGameAudio(audioPreferences))
-  const control = useGamePlayback({ active: gameStarted && state.phase !== 'game_over', audio, playback: dependencies.playback })
+  const control = useGamePlayback({ active: gameStarted && (state.phase !== 'game_over' || Boolean(activeAction)), audio, playback: dependencies.playback })
   const { playback } = control
   const taskAbort = useRef(new AbortController())
-  const wait = useCallback((ms: number) => playback.wait(ms, taskAbort.current.signal), [playback])
+  const wait = useCallback(async (ms: number) => {
+    const results = await Promise.all([playback.wait(ms, taskAbort.current.signal), presentation?.actions.wait(taskAbort.current.signal)])
+    return results[0]
+  }, [playback, presentation])
   useLayoutEffect(() => {
     playback.setBlocked('请先关闭面板', gameStarted && state.phase !== 'game_over' && (settingsOpen || rulesOpen))
   }, [playback, gameStarted, state.phase, settingsOpen, rulesOpen])
@@ -101,16 +108,20 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
   ), [dependencies.delays])
 
   const send = useCallback((event: GameEvent): GameState => {
-    const next = gameReducer(stateRef.current, event)
+    const before = stateRef.current
+    const next = gameReducer(before, event)
+    if (next !== before) presentation?.animate(event, before, next)
     stateRef.current = next
     setState(next)
     if (isPresentationEvent(event)) setPresentationEvent({ sequence: ++eventSequence.current, event })
     return next
-  }, [])
+  }, [presentation])
 
   const play = useCallback((cue: SoundCue) => {
-    if (!playback.paused) audio.play(cue)
-  }, [audio, playback])
+    if (playback.paused || (presentation && cue === 'roll')) return
+    if (presentation?.actions.busy) presentation.actions.cue(() => audio.play(cue))
+    else audio.play(cue)
+  }, [audio, playback, presentation])
 
   const unlockAudio = useCallback(() => {
     if (!playback.paused) void audio.unlock()
@@ -128,11 +139,13 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     const controller = new AbortController()
     rollAbort.current = controller
     const id = ++rollSequence.current
-    await presentSafely(playback, presentRoll, { id, dice, player, onImpact: (strength) => {
+    if (presentation) await presentation.actions.wait(controller.signal)
+    if (controller.signal.aborted || activeRun !== runId.current) return
+    await presentSafely(playback, presentRoll, { id, dice, player, fast: presentation?.actions.preferences.fast, onStart: presentation ? () => audio.play('roll') : undefined, onImpact: (strength) => {
       if (!controller.signal.aborted && activeRun === runId.current && !playback.paused) audio.playImpact?.(strength)
     } }, controller.signal, delayFor('roll'))
     controller.abort()
-  }, [audio, delayFor, presentRoll, playback])
+  }, [audio, delayFor, presentRoll, playback, presentation])
 
   useEffect(() => {
     if (saveStored(storage, SETTINGS_KEY, settings)) return
@@ -156,9 +169,10 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     runId.current += 1
     rollAbort.current?.abort()
     taskAbort.current.abort()
+    presentation?.reset()
     playback.cancelAll()
     if (ownsAudio) void audio.dispose()
-  }, [audio, ownsAudio, playback])
+  }, [audio, ownsAudio, playback, presentation])
 
   const selectedDice = useMemo(
     () => state.rolledDice.filter((die) => die.selected),
@@ -313,6 +327,7 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     if (protector?.useLimit) {
       send({ type: 'SET_MESSAGE', message: '幸运护符生效！这次爆骰被免除，骰子将重新投出。', phase: 'bust' })
       send({ type: 'MARK_MODIFIER_USED', modifierId: protector.id, scope: protector.useLimit.scope })
+      play('charm')
       await wait(delayFor('hotDice'))
       if (activeRun !== runId.current) return
 
@@ -373,6 +388,7 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     runId.current += 1
     rollAbort.current?.abort()
     taskAbort.current.abort()
+    presentation?.reset()
     playback.cancelAll()
     taskAbort.current = new AbortController()
     playback.setActive(false)
@@ -385,11 +401,11 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     setGameStarted(true)
     setSettingsOpen(false)
     setRulesOpen(false)
-  }, [send, settings, unlockAudio, playback])
+  }, [send, settings, unlockAudio, playback, presentation])
 
   const roll = useCallback(() => {
     const current = stateRef.current
-    if (playback.paused || current.currentPlayer !== 'human' || current.phase === 'rolling') return
+    if (playback.paused || presentation?.actions.busy || current.currentPlayer !== 'human' || current.phase === 'rolling') return
     unlockAudio()
     if (current.phase === 'ready') {
       void performHumanRoll(fullPlayerLoadout(current.config))
@@ -424,14 +440,14 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
       message: hotDice ? 'HOT DICE！全部骰子都已计分，获得一整把新骰子。' : `已锁定 ${addition} 分，继续挑战运气……`,
     })
     play(hotDice ? 'hot-dice' : 'lock')
-    playback.schedule(() => {
+    void wait(delayFor(hotDice ? 'hotDice' : 'betweenRolls')).then(() => {
       if (scheduledRun === runId.current) void performHumanRoll(nextDefinitions)
-    }, delayFor(hotDice ? 'hotDice' : 'betweenRolls'), taskAbort.current.signal)
-  }, [delayFor, performHumanRoll, play, selectedDice.length, selectedScore, selection.valid, send, unlockAudio, playback])
+    })
+  }, [delayFor, performHumanRoll, play, selectedDice.length, selectedScore, selection.valid, send, unlockAudio, playback, presentation, wait])
 
   const bank = useCallback(() => {
     const current = stateRef.current
-    if (playback.paused || current.currentPlayer !== 'human' || current.phase !== 'selecting') return
+    if (playback.paused || presentation?.actions.busy || current.currentPlayer !== 'human' || current.phase !== 'selecting') return
     unlockAudio()
     if (!selection.valid) {
       send({
@@ -457,15 +473,15 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     play(won ? 'victory' : 'bank')
     recordHumanTurn(turnTotal, current.rollStreak, won)
     if (!won) {
-      playback.schedule(() => {
+      void wait(delayFor('handoff')).then(() => {
         if (scheduledRun === runId.current) startAi(next)
-      }, delayFor('handoff'), taskAbort.current.signal)
+      })
     }
-  }, [delayFor, play, recordHumanTurn, selectedDice, selectedScore, selection.valid, send, startAi, unlockAudio, playback])
+  }, [delayFor, play, recordHumanTurn, selectedDice, selectedScore, selection.valid, send, startAi, unlockAudio, playback, presentation, wait])
 
   const toggleDie = useCallback((id: string) => {
     const current = stateRef.current
-    if (playback.paused || current.phase !== 'selecting' || current.currentPlayer !== 'human') return
+    if (playback.paused || presentation?.actions.busy || current.phase !== 'selecting' || current.currentPlayer !== 'human') return
     unlockAudio()
     if (current.doubledSelection) {
       send({ type: 'SET_MESSAGE', message: '孤注一掷已经确认，请保持当前选择并继续投掷或保存。' })
@@ -473,19 +489,19 @@ export function useDiceGame(dependencies: DiceGameDependencies = {}) {
     }
     send({ type: 'TOGGLE_DIE', dieId: id })
     play('select')
-  }, [play, send, unlockAudio, playback])
+  }, [play, send, unlockAudio, playback, presentation])
 
   const useModifier = useCallback((modifierId: string) => {
     const current = stateRef.current
-    if (playback.paused || current.currentPlayer !== 'human' || current.phase !== 'selecting') return
+    if (playback.paused || presentation?.actions.busy || current.currentPlayer !== 'human' || current.phase !== 'selecting') return
     unlockAudio()
     const reason = modifierDisabledReason(current, modifierId)
     if (reason) { send({ type: 'SET_MESSAGE', message: reason }); return }
     const event = abilityEvent(current, modifierId)
     if (!event) return
     send(event)
-    play(event.type === 'USE_DOUBLE_DOWN' ? 'lock' : 'select')
-  }, [play, send, unlockAudio, playback])
+    play(event.type === 'USE_DOUBLE_DOWN' ? 'double' : 'flip')
+  }, [play, send, unlockAudio, playback, presentation])
 
   const updateSettings = useCallback((updates: Partial<GameSettings>) => {
     setSettings((current) => normalizeSettings({ ...current, ...updates }))

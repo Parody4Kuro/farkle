@@ -40,7 +40,7 @@ try {
     archive: { file: path.basename(archive), bytes: fs.statSync(path.join(root, archive)).size, sha256: sha(fs.readFileSync(path.join(root, archive))) },
     appAsarSha256: asarHash, rendererFiles, desktopFiles,
     verification: { extractedSignature: 'codesign --verify --deep --strict: passed', archiveMatchesLocalApp: true, rendererMatchesDist: true, desktopMatchesSource: true, bundleVersionMatchesPackage: true },
-    validationReport: 'docs/friends-validation.md', saveDataIncluded: false,
+    validationReport: 'docs/realism/validation.md', saveDataIncluded: false,
   }
   const text = JSON.stringify(manifest, null, 2) + '\n'
   fs.writeFileSync(path.join(root, output, 'manifest.json'), text)

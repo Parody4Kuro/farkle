@@ -1,0 +1,22 @@
+.presentation-hud { position:absolute; inset:0; z-index:14; pointer-events:none; }
+.presentation-cue { position:absolute; left:50%; bottom:18%; transform:translateX(-50%); display:flex; align-items:center; gap:1rem; padding:.6rem 1.15rem; max-width:80%; border:1px solid #bb966456; border-radius:4px; background:#1b1712e8; box-shadow:0 6px 24px #0005; color:#e8d6b8; font-size:clamp(.8rem, 1.5vw, 1.1rem); letter-spacing:.09em; white-space:nowrap; }
+.presentation-cue strong { color:#f3cf85; font-size:1.5em; font-variant-numeric:tabular-nums; }
+.cue-bust strong { color:#df9786; }
+.skip-presentation { pointer-events:auto; position:absolute; right:1rem; bottom:1rem; padding:.5rem .9rem; border:1px solid #d2b48660; border-radius:4px; background:#1b1712e8; color:#e7d6b9; font-size:.8rem; }
+.skip-presentation:hover { background:#4a3826; }
+.skip-presentation:focus-visible { outline:2px solid #f2d692; outline-offset:3px; }
+.score-flight-origin { position:absolute; top:50%; left:0; width:100%; height:1px; text-align:center; }
+.score-flight { display:inline-block; font-size:2rem; font-weight:700; color:#f3d69b; text-shadow:0 2px 8px #000; font-variant-numeric:tabular-nums; }
+.presentation-options { display:flex; flex-wrap:wrap; gap:.75rem 1.2rem; border:1px solid #aa89513d; border-radius:6px; padding:.75rem; margin:1rem 0; }
+.presentation-options legend { font-size:.8rem; color:#cfb282; padding:0 .4rem; }
+.presentation-options label { display:flex; align-items:center; gap:.4rem; font-size:.85rem; }
+.presentation-options select { padding:.3rem; color:inherit; background:#25211c; border:1px solid #8c754b; }
+.presentation-options input { accent-color:#b98c51; }
+[data-score-field] { font-variant-numeric:tabular-nums; }
+.tavern-scene[data-art="realistic"] .scene-vignette { opacity:.32; }
+.tavern-scene[data-art="realistic"] .dice-hit { border-radius:7px; }
+.tavern-scene[data-art="realistic"] .dice-hit span { opacity:.6; font-size:10px; }
+.tavern-scene[data-art="realistic"] .dice-hit.selected { background:#e6bc6120; border-color:#f1cd8977; }
+@media (prefers-reduced-motion:reduce) { .score-flight-origin { display:none; } }
+.night-scoreband strong [data-score-field], .score-card strong [data-score-field], .friend-score strong [data-score-field], .pot-label b [data-score-field] { font:inherit; color:inherit; letter-spacing:inherit; }
+.night-scoreband strong [data-score-field] span, .score-card strong [data-score-field] span, .friend-score strong [data-score-field] span, .pot-label b [data-score-field] span { font:inherit; color:inherit; letter-spacing:inherit; }

@@ -1,3 +1,4 @@
+import { usePresentationPreferences } from '../hooks/usePresentation'
 import { useState } from 'react'
 import type { AdventureRun } from '../game/adventure'
 import { OPPONENTS } from '../game/opponents'
@@ -14,6 +15,7 @@ export function TavernLobby({ saved, profile, comfort, onStart, onContinue, onCl
   onComfort: (next: ComfortPreferences) => void; warning: string
 }) {
   const [presentation] = useState(() => new RollPresentation())
+  usePresentationPreferences(presentation, comfort)
   const [preview] = useState(createInitialState)
   const [origin, setOrigin] = useState('traveller')
   const [settings, setSettings] = useState(false)

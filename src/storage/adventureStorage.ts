@@ -7,14 +7,15 @@ import { getBrowserStorage, normalizeSettings, saveStored } from './gameStorage'
 import { CORE_MODIFIERS } from '../game/cores'
 import { isScoringVersion, LEGACY_SCORING_VERSION } from '../game/scoringVersions'
 import { createInventory, ensureBaseDice, loadoutError, type Inventory } from '../game/inventory'
+import type { PresentationPreferences } from '../presentation/ActionPlayback'
 
 export const ADVENTURE_KEY = 'tavern-bones-adventure-v2'
 export const LEGACY_ADVENTURE_KEY = 'tavern-bones-adventure-v1'
 export const PROFILE_KEY = 'tavern-bones-profile-v1'
 export const COMFORT_KEY = 'tavern-bones-comfort-v1'
 export interface AdventureProfile { finishedIds: string[]; nights: number; wins: number; peak: number; memories: string[] }
-export interface ComfortPreferences { fast: boolean; dialogue: boolean; environment: number; music: number; largeText: boolean; appearance: 'copper' | 'moon' }
-export const DEFAULT_COMFORT: ComfortPreferences = { fast: false, dialogue: true, environment: 0.25, music: 0.15, largeText: false, appearance: 'copper' }
+export interface ComfortPreferences extends PresentationPreferences { dialogue: boolean; environment: number; music: number; largeText: boolean; appearance: 'copper' | 'moon' }
+export const DEFAULT_COMFORT: ComfortPreferences = { fast: false, cinematic: true, reducedMotion: false, quality: 'auto', dialogue: true, environment: 0.25, music: 0.15, largeText: false, appearance: 'copper' }
 export const EMPTY_PROFILE: AdventureProfile = { finishedIds: [], nights: 0, wins: 0, peak: 0, memories: [] }
 
 type Storage = { getItem(key: string): string | null; setItem(key: string, value: string): void }
@@ -165,7 +166,8 @@ export function loadComfort(storage = getBrowserStorage()): ComfortPreferences {
   const value = read(COMFORT_KEY, storage)
   if (!record(value)) return { ...DEFAULT_COMFORT }
   const volume = (v: unknown, fallback: number) => typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fallback
-  return { fast: value.fast === true, dialogue: value.dialogue !== false, environment: volume(value.environment, 0.25),
+  return { fast: value.fast === true, cinematic: value.cinematic !== false, reducedMotion: value.reducedMotion === true,
+    quality: value.quality === 'high' || value.quality === 'low' ? value.quality : 'auto', dialogue: value.dialogue !== false, environment: volume(value.environment, 0.25),
     music: volume(value.music, 0.15), largeText: value.largeText === true, appearance: value.appearance === 'moon' ? 'moon' : 'copper' }
 }
 

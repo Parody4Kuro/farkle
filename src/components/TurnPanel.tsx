@@ -1,6 +1,9 @@
+import { AnimatedScore } from './PresentationHUD'
+import type { RollPresentation } from '../presentation/rollPresentation'
 import type { PlayerId } from '../game/types'
 
 interface TurnPanelProps {
+  presentation?: RollPresentation
   turnScore: number
   selectedScore: number
   selectedValid: boolean
@@ -14,6 +17,7 @@ interface TurnPanelProps {
 }
 
 export function TurnPanel({
+  presentation,
   turnScore,
   selectedScore,
   selectedValid,
@@ -28,7 +32,7 @@ export function TurnPanel({
   return (
     <>
       <div className="turn-stats">
-        <div><span>本回合</span><strong>{turnScore.toLocaleString()}</strong></div>
+        <div><span>本回合</span><strong><AnimatedScore value={turnScore} field="turn" player={currentPlayer} presentation={presentation} /></strong></div>
         <div className={!selectedValid && hasSelection ? 'invalid-stat' : ''}>
           <span>当前选择</span>
           <strong>{hasSelection ? selectedScore.toLocaleString() : '—'}{doubledSelection && <small>双倍</small>}</strong>

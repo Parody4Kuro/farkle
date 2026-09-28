@@ -1,11 +1,15 @@
 import type { DieInstance, PlayerId } from '../game/types'
 import { GamePlayback } from './GamePlayback'
+import { ActionPlayback, actionForEvent } from './ActionPlayback'
+import type { GameEvent } from '../game/state'
+import type { GameState } from '../game/types'
 
 export interface RollRequest {
   id: number
   dice: DieInstance[]
   player: PlayerId
   fast?: boolean
+  onStart?: () => void
   onImpact: (strength: number) => void
 }
 
@@ -19,8 +23,31 @@ export class RollPresentation {
   private ready = false
   private cancelFinish = () => {}
   readonly playback: GamePlayback
+  readonly actions: ActionPlayback
+  startedAt = -1
+  private generation = 0
+  private actionSequence = 0
 
-  constructor(playback = new GamePlayback()) { this.playback = playback }
+  constructor(playback = new GamePlayback()) { this.playback = playback; this.actions = new ActionPlayback(playback) }
+
+  animate(event: GameEvent, before: GameState, after: GameState) {
+    const request = actionForEvent(`local:${this.generation}:${++this.actionSequence}`, event, before, after)
+    if (request) this.actions.enqueue(request)
+  }
+
+  start(id: number) {
+    if (this.current?.id !== id || this.startedAt >= 0) return
+    this.startedAt = this.playback.now()
+    this.current.onStart?.()
+  }
+
+  skip = () => {
+    if (this.playback.paused) return
+    this.actions.clear()
+    this.finish()
+  }
+
+  reset = () => { this.generation++; this.actions.reset(); this.complete() }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -39,6 +66,13 @@ export class RollPresentation {
   }
 
   present: PresentRoll = (request, signal) => {
+    if (this.actions.busy) {
+      const generation = this.generation
+      return this.actions.wait(signal).then(() => {
+        if (signal.aborted || generation !== this.generation) return
+        return this.present(request, signal)
+      })
+    }
     this.complete()
     if (signal.aborted) return Promise.resolve()
     return new Promise<void>((resolve) => {
@@ -51,6 +85,7 @@ export class RollPresentation {
       }
       signal.addEventListener('abort', onAbort, { once: true })
       this.current = request
+      this.startedAt = -1
       this.publish()
     })
   }
@@ -70,6 +105,7 @@ export class RollPresentation {
     const resolve = this.resolve
     this.resolve = undefined
     this.current = null
+    this.startedAt = -1
     resolve?.()
     this.publish()
   }

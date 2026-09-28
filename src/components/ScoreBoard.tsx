@@ -1,3 +1,5 @@
+import { AnimatedScore } from './PresentationHUD'
+import type { RollPresentation } from '../presentation/rollPresentation'
 import type { AiDifficulty, PlayerId } from '../game/types'
 
 const DIFFICULTY_LABELS: Record<AiDifficulty, string> = {
@@ -7,19 +9,20 @@ const DIFFICULTY_LABELS: Record<AiDifficulty, string> = {
 }
 
 interface ScoreBoardProps {
+  presentation?: RollPresentation
   scores: Record<PlayerId, number>
   currentPlayer: PlayerId
   targetScore: number
   difficulty: AiDifficulty
 }
 
-export function ScoreBoard({ scores, currentPlayer, targetScore, difficulty }: ScoreBoardProps) {
+export function ScoreBoard({ scores, currentPlayer, targetScore, difficulty, presentation }: ScoreBoardProps) {
   return (
     <section className="scoreboard" aria-label="计分板">
       <article className={`score-card human ${currentPlayer === 'human' ? 'is-active' : ''}`}>
         <div>
           <span className="score-label">你</span>
-          <strong>{scores.human.toLocaleString()}</strong>
+          <strong><AnimatedScore value={scores.human} player="human" presentation={presentation} /></strong>
         </div>
         {currentPlayer === 'human' && <span className="turn-seal">你的回合</span>}
       </article>
@@ -31,7 +34,7 @@ export function ScoreBoard({ scores, currentPlayer, targetScore, difficulty }: S
         <span className="ai-badge">AI · {DIFFICULTY_LABELS[difficulty]}</span>
         <div>
           <span className="score-label">酒馆老板</span>
-          <strong>{scores.ai.toLocaleString()}</strong>
+          <strong><AnimatedScore value={scores.ai} player="ai" presentation={presentation} /></strong>
         </div>
       </article>
     </section>

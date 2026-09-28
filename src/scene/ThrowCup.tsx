@@ -1,54 +1,28 @@
+/* oxlint-disable react/immutability -- Frame transforms belong to Three. */
 import { useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import { Group, Vector3 } from 'three'
+import { useFrame } from '@react-three/fiber'
+import { Group } from 'three'
 import type { RollPresentation } from '../presentation/rollPresentation'
 import type { TavernArt } from './materials'
+import { cupTransform, rollElapsed } from './cupMotion'
 
-export function ThrowCup({ art, presentation, reduced, hands = false, moon = false }: {
-  art: TavernArt; presentation: RollPresentation; reduced: boolean; hands?: boolean; moon?: boolean
-}) {
-  const { invalidate } = useThree()
-  const ref = useRef<Group>(null)
-  const origin = useRef(new Vector3(-6.15, 0.61, 0.1))
-  const target = useRef(new Vector3())
-  const started = useRef({ id: -1, time: 0 })
-  useFrame((_state, delta) => {
-    if (!ref.current || presentation.playback.paused) return
+export function ThrowCup({ art, presentation, reduced }: { art: TavernArt; presentation: RollPresentation; reduced: boolean }) {
+  const refs = useRef<(Group | null)[]>([])
+  useFrame(() => {
+    if (presentation.playback.paused) return
     const roll = presentation.getSnapshot()
-    if (roll && roll.id !== started.current.id) started.current = { id: roll.id, time: presentation.playback.now() / 1000 }
-    const elapsed = presentation.playback.now() / 1000 - started.current.time
-    const tossing = Boolean(roll) && (!hands || roll?.player === 'human') && !reduced && elapsed < 0.8
-    const lift = tossing ? Math.sin(Math.min(1, elapsed / 0.8) * Math.PI) : 0
-    target.current.set(origin.current.x + lift * 3.7, origin.current.y + lift * 2.5, origin.current.z - lift * 0.8)
-    ref.current.position.lerp(target.current, reduced ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * 20))
-    ref.current.rotation.z = -0.12 - lift * 1.5
-    ref.current.rotation.x = -lift * 0.3
-    if (tossing || ref.current.position.distanceTo(target.current) > 0.002) invalidate()
+    for (const [i, player] of (['human', 'ai'] as const).entries()) {
+      const group = refs.current[i]; if (!group) continue
+      const transform = cupTransform(!reduced && roll?.player === player ? rollElapsed(presentation) : -1, player)
+      group.position.copy(transform.position); group.quaternion.copy(transform.rotation)
+    }
   })
-  return (
-    <group ref={ref} position={[-6.15, 0.61, 0.1]}>
-      <mesh material={moon ? art.colors.dark : art.colors.wine} castShadow>
-        <cylinderGeometry args={[0.62, 0.44, 1.25, 12, 1, true]} />
-      </mesh>
-      <mesh position={[0, 0.02, 0]} material={art.ink} scale={1.025}>
-        <cylinderGeometry args={[0.62, 0.44, 1.25, 12, 1, true]} />
-      </mesh>
-      <mesh position={[0, -0.55, 0]} material={art.colors.woodDark}><cylinderGeometry args={[0.44, 0.44, 0.12, 12]} /></mesh>
-      {[-0.46, 0.57].map((y) => (
-        <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} material={art.colors.copper}>
-          <torusGeometry args={[y > 0 ? 0.61 : 0.465, 0.06, 6, 12]} />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.1, 0.555]} rotation={[0, 0, Math.PI / 4]} material={art.colors.copper}>
-        <boxGeometry args={[0.25, 0.25, 0.035]} />
-      </mesh>
-      {hands && <group position={[-0.35, -0.2, 0.45]}>
-        <mesh position={[-0.2, 0, 0.2]} scale={[0.32, 0.37, 0.2]} castShadow><sphereGeometry args={[1, 10, 8]} /><meshToonMaterial color="#c69a78" /></mesh>
-        {[0, 1, 2, 3].map((i) => <mesh key={i} position={[0.12, 0.32 - i * 0.17, 0.05]} rotation={[0, 0.3, 0]} scale={[0.3, 0.075, 0.085]} castShadow>
-          <sphereGeometry args={[1, 8, 8]} /><meshToonMaterial color="#c69a78" />
-        </mesh>)}
-        <mesh position={[-0.45, -0.3, 0.8]} rotation={[-0.5, 0.1, 0.35]} castShadow><cylinderGeometry args={[0.28, 0.42, 1.7, 10]} /><meshToonMaterial color="#485a50" /></mesh>
-      </group>}
-    </group>
-  )
+  return <>{(['human', 'ai'] as const).map((player, i) => <group key={player} ref={(g) => { refs.current[i] = g }}>
+    <mesh material={art.colors.leather} castShadow receiveShadow><cylinderGeometry args={[.049, .037, .14, 48, 1, true]} /></mesh>
+    <mesh><cylinderGeometry args={[.046, .034, .133, 48, 1, true]} /><meshStandardMaterial color="#281c17" side={1} roughness={.92} /></mesh>
+    <mesh position={[0, -.064, 0]} material={art.colors.woodDark}><cylinderGeometry args={[.037, .037, .012, 48]} /></mesh>
+    {[-.057, .069].map((y) => <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} material={art.colors.copper}><torusGeometry args={[y > 0 ? .048 : .038, .0022, 8, 48]} /></mesh>)}
+    {Array.from({ length: 12 }, (_, j) => <mesh key={j} position={[0, -.052 + j * .009, .04 + j * .0007]} rotation={[0, 0, -.4]} material={art.colors.parchment}><boxGeometry args={[.004, .001, .001]} /></mesh>)}
+    <mesh position={[.028, .004, .033]} rotation={[0, .65, Math.PI / 4]} material={art.colors.copper}><boxGeometry args={[.017, .017, .0018]} /></mesh>
+  </group>)}</>
 }

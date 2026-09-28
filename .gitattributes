@@ -1,3 +1,11 @@
 artifacts/macos/*.zip filter=lfs diff=lfs merge=lfs -text
 # Preserve generated payload bytes, including embedded shader source whitespace.
 dist/** -text -diff -whitespace linguist-generated=true
+
+# Editable anatomy and embedded GLB textures are binary deliverables.
+artifacts/art-source/*.blend filter=lfs diff=lfs merge=lfs -text
+public/art/characters/*.glb filter=lfs diff=lfs merge=lfs -text
+dist/art/characters/*.glb filter=lfs diff=lfs merge=lfs -text
+artifacts/realism/*.webm filter=lfs diff=lfs merge=lfs -text
+# Preserve the original upstream provenance records byte for byte.
+artifacts/art-source/licenses/** -whitespace

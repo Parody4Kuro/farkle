@@ -5,10 +5,12 @@ export interface Trajectory {
   step: number
   frames: Pose[][]
   impacts: { time: number; strength: number }[]
+  releases?: number[]
 }
-export interface PhysicsRequest { id: number; count: number; seed: number }
+export interface PhysicsRequest { id: number; count: number; seed: number; player?: 'human' | 'ai'; origin?: Vec3 }
 export interface PhysicsResponse { id: number; trajectory?: Trajectory }
 
-export const DIE_SIZE = 0.94
-export const ARENA_X = 5.4
-export const ARENA_Z = 2.5
+import { TABLE } from '../layout'
+export const DIE_SIZE = TABLE.die
+export const ARENA_X = TABLE.arenaX
+export const ARENA_Z = TABLE.arenaZ

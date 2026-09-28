@@ -28,3 +28,6 @@ playwright-report/
 
 # Expanded desktop build directories; published archives live in artifacts/macos/.
 release/
+
+# Blender's regenerable previous-save backups (editable .blend sources are tracked).
+artifacts/art-source/*.blend[0-9]

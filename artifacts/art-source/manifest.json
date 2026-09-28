@@ -1,0 +1,73 @@
+{
+  "tools": [
+    {
+      "name": "Blender",
+      "version": "4.5.14 LTS",
+      "url": "https://download.blender.org/release/Blender4.5/blender-4.5.14-macos-arm64.dmg",
+      "sha256": "65134d9b07b20e2fa8d3c9e44f6f44ffb5c9774dd521b95f50387310241ca170"
+    },
+    {
+      "name": "MPFB",
+      "version": "2.0.17",
+      "url": "https://github.com/makehumancommunity/mpfb2/tree/v2.0.17",
+      "archiveSha256": "d08e726c798fdc4eefb02b06b6c4efe37d40b5439777e53cf96dce0e5073297d"
+    }
+  ],
+  "makehuman": {
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "license": "CC0-1.0",
+    "sha256": "b542127a8e25547c7c29c19f2d1d2adb9a664c80396ecd694095dbc8028a0107"
+  },
+  "files": [
+    {
+      "file": "public/art/characters/keeper.glb",
+      "bytes": 11845412,
+      "sha256": "7733897daf6e0e743545ff16923b7921cb47fb0057f4d17a3328f3bb06bad8a1"
+    },
+    {
+      "file": "public/art/characters/mara.glb",
+      "bytes": 11168212,
+      "sha256": "f45e5af8435d3b2993989a62e8b40ae1be2647ec66edba8f3d6c3723935b7000"
+    },
+    {
+      "file": "public/art/characters/osric.glb",
+      "bytes": 9999572,
+      "sha256": "6cf87f3ab1849dce1899e5632a7b988309f745ae2b81639720409f8882c0b2e9"
+    },
+    {
+      "file": "public/art/characters/player-hands.glb",
+      "bytes": 6460184,
+      "sha256": "4ac368120e5df3ac7eeabe2e5256ad88c69d7a9a6a7fd56be8b86e50589472d8"
+    },
+    {
+      "file": "public/art/characters/rue.glb",
+      "bytes": 11257148,
+      "sha256": "ad238c939ef79fd76f5090344ca248fce707304f39599bf1879d40267aa0f7ef"
+    },
+    {
+      "file": "artifacts/art-source/keeper.blend",
+      "bytes": 4928626,
+      "sha256": "7d7c29472e696daf94234aa5caf0dddd9fa588f37f1035c6f45536e3af8be46c"
+    },
+    {
+      "file": "artifacts/art-source/mara.blend",
+      "bytes": 5324084,
+      "sha256": "08190d9cee9328a826ac207dc718b8c7ea84eaee0e65e8387f71595059dbdf65"
+    },
+    {
+      "file": "artifacts/art-source/osric.blend",
+      "bytes": 4812335,
+      "sha256": "2ac6fb8c85db87375c4ce13cec9868854762fb791dbe8f986f4ec8496e62b468"
+    },
+    {
+      "file": "artifacts/art-source/player-hands.blend",
+      "bytes": 2233263,
+      "sha256": "28057a9065b820a5f6631800451ae75c015f30bb3536b553039cb24462680742"
+    },
+    {
+      "file": "artifacts/art-source/rue.blend",
+      "bytes": 4886414,
+      "sha256": "7f3fbc7ec0a30258eec2f3e2eb0159a3cb3d716209ce17149ab551b7484ed015"
+    }
+  ]
+}

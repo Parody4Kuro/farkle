@@ -2,7 +2,7 @@
 
 `Tavern-Bones-mac-arm64.zip` 是当前 Apple Silicon Mac 应用，通过 Git LFS 与源码一起提交。`manifest.json` 记录本包对应的游戏源码提交、压缩包与 `app.asar` 的 SHA-256。
 
-当前分支的好友直连构建可[直接下载 ZIP](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)，对应本目录清单。它尚未发布新的版本标签，历史 Release 不会随分支更新。
+当前分支的写实场景与完整动画构建可[直接下载 ZIP](https://media.githubusercontent.com/media/Parody4Kuro/farkle/codex/mac-desktop-adventure/artifacts/macos/Tavern-Bones-mac-arm64.zip)，对应本目录清单。它尚未发布新的版本标签，历史 Release 不会随分支更新。
 
 ## 安装与升级
 

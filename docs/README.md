@@ -11,6 +11,10 @@
 - [整备、键盘与好友直连说明](friends-and-controls.md)
 - [好友直连与界面验收记录](friends-validation.md)
 
+- [写实场景与沉浸动画验收](realism/validation.md)
+- [可编辑模型、素材授权与重建](../artifacts/art-source/README.md)
+- [首桌实机录像](../artifacts/realism/first-table.webm)
+
 ## 规则与验证
 
 - [整备与铜筹账簿问题核验](loadout-ledger-review.md)：公平骰库存、入座前装备编辑、计分版本与旧存档兼容。

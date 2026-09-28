@@ -1,4 +1,6 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { PresentationHUD } from './PresentationHUD'
+import { usePresentationAction } from '../hooks/usePresentation'
 import { DiceTable } from './DiceTable'
 import type { SceneProps } from '../scene/sceneTypes'
 
@@ -28,9 +30,10 @@ export function TableStage(props: Omit<SceneProps, 'onUnavailable'>) {
     props.presentation.setReady(false)
     setSupported(false)
   }, [props.presentation])
-  const { state } = props
+  const action = usePresentationAction(props.presentation)
+  const state = action?.before ?? props.state
   const { paused } = useSyncExternalStore(props.presentation.playback.subscribe, props.presentation.playback.getSnapshot, props.presentation.playback.getSnapshot)
-  const canSelect = !paused && state.currentPlayer === 'human' && state.phase === 'selecting' && !state.doubledSelection
+  const canSelect = !action && !paused && state.currentPlayer === 'human' && state.phase === 'selecting' && !state.doubledSelection
   useEffect(() => {
     // The roll button disappears when results arrive. Keep keyboard navigation
     // with the new controls instead of leaving its starting point below them.
@@ -41,7 +44,7 @@ export function TableStage(props: Omit<SceneProps, 'onUnavailable'>) {
   const fallback = (
     <div className="table-fallback">
       <DiceTable rolledDice={state.rolledDice} lockedDice={state.lockedDice} diceToRoll={state.diceToRoll}
-        phase={state.phase} humanTurn={!paused && state.currentPlayer === 'human'} isRolling={state.phase === 'rolling'}
+        phase={state.phase} humanTurn={!action && !paused && state.currentPlayer === 'human'} isRolling={state.phase === 'rolling'}
         selectionValid={props.selectionValid} onToggleDie={props.onToggleDie} />
     </div>
   )
@@ -50,6 +53,7 @@ export function TableStage(props: Omit<SceneProps, 'onUnavailable'>) {
       {supported
         ? <SceneBoundary fallback={fallback} onError={fail}><Suspense fallback={fallback}><TavernScene {...props} onUnavailable={fail} /></Suspense></SceneBoundary>
         : fallback}
+      <PresentationHUD presentation={props.presentation} />
       {!supported && <span className="fallback-label">简约桌面模式</span>}
     </div>
   )

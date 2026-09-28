@@ -1,0 +1,111 @@
+{
+  "machine": "Apple M4",
+  "ramBytes": 17179869184,
+  "viewport": {
+    "width": 1470,
+    "height": 891,
+    "dpr": 2
+  },
+  "fullRollFrames": {
+    "samples": 166,
+    "medianMs": 16.699999999999818,
+    "p95Ms": 16.799999999999955,
+    "maxMs": 166.60000000000002,
+    "over33Ms": 1,
+    "over100Ms": 1
+  },
+  "frames": {
+    "engine": "three.js r185",
+    "frameP50": "16.70",
+    "frameP95": "17.00",
+    "triangles": "334856",
+    "drawCalls": "192",
+    "renderDpr": "1.5"
+  },
+  "system": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "electron": "44.3.0",
+    "gpu": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "enabled_on",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    },
+    "processes": [
+      {
+        "type": "Browser",
+        "cpu": {
+          "cumulativeCPUUsage": 1.053357,
+          "percentCPUUsage": 0,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 247200,
+          "peakWorkingSetSize": 284064
+        }
+      },
+      {
+        "type": "GPU",
+        "cpu": {
+          "cumulativeCPUUsage": 0.860697,
+          "percentCPUUsage": 0,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 238016,
+          "peakWorkingSetSize": 258512
+        }
+      },
+      {
+        "type": "Utility",
+        "cpu": {
+          "cumulativeCPUUsage": 0.057052,
+          "percentCPUUsage": 0,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 49872,
+          "peakWorkingSetSize": 49872
+        }
+      },
+      {
+        "type": "Tab",
+        "cpu": {
+          "cumulativeCPUUsage": 2.248273,
+          "percentCPUUsage": 0,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 584336,
+          "peakWorkingSetSize": 593248
+        }
+      },
+      {
+        "type": "Utility",
+        "cpu": {
+          "cumulativeCPUUsage": 0.079801,
+          "percentCPUUsage": 0,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 47424,
+          "peakWorkingSetSize": 47424
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "remote": [],
+  "at": "2026-09-28T17:34:26.853Z"
+}

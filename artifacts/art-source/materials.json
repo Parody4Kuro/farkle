@@ -1,0 +1,74 @@
+[
+  {
+    "file": "public/art/materials/wood-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/wood_table_worn",
+    "license": "CC0-1.0",
+    "sha256": "092ab3465a6a24b24d092ea86865f332c3bd239b8eb2fd664b70357082031a3f",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/wood-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/wood_table_worn",
+    "license": "CC0-1.0",
+    "sha256": "0d494f3fe08320a05f0f966a7a3ca3c4cd6e3f7cde5b176b9bc167b5593fd00d",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/wood-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_worn/wood_table_worn_rough_1k.jpg",
+    "asset": "https://polyhaven.com/a/wood_table_worn",
+    "license": "CC0-1.0",
+    "sha256": "ebc4a15d7d3495ee1b67ba18f67bffcefac3f93881d1394fa3e22a25f9fe5c72",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/leather-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_albedo_1k.jpg",
+    "asset": "https://polyhaven.com/a/brown_leather",
+    "license": "CC0-1.0",
+    "sha256": "7e9e1d6566d1fd91d4ceb4966c4820361e85d53a7a828b6bab3b2a093a876cd1",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/leather-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/brown_leather",
+    "license": "CC0-1.0",
+    "sha256": "506a0b7650c2dea285e247f26ed2d0d6ec38fc10dd584359f0d203e9c082236d",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/leather-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_leather/brown_leather_rough_1k.jpg",
+    "asset": "https://polyhaven.com/a/brown_leather",
+    "license": "CC0-1.0",
+    "sha256": "f9739ef2da2e3d17b9ec253f5042f61b10dc10f3ae28f6cf6491650d3d1b0ca3",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/fabric-color.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric/denim_fabric_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/denim_fabric",
+    "license": "CC0-1.0",
+    "sha256": "d6d0254e2c90768482b0be8cfdc16e18117acc92bad00d406fd4b9be24facdec",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/fabric-normal.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric/denim_fabric_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/denim_fabric",
+    "license": "CC0-1.0",
+    "sha256": "de0e9c5ed5cce7dacd50a67be16c6d8b8dc036907638e3702729c2f60296094e",
+    "modifications": "1K original map; runtime tint and UV scale"
+  },
+  {
+    "file": "public/art/materials/fabric-roughness.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric/denim_fabric_rough_1k.jpg",
+    "asset": "https://polyhaven.com/a/denim_fabric",
+    "license": "CC0-1.0",
+    "sha256": "51b971b7e83d733d88940be2a417c6ce8ea3a82c27a7cb3525f4bacc97aad2b7",
+    "modifications": "1K original map; runtime tint and UV scale"
+  }
+]

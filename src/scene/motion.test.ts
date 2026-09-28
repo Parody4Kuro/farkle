@@ -22,7 +22,7 @@ describe('interrupted 3D playback', () => {
     expect(motion.plan).toBeUndefined()
     dice.forEach((die) => {
       const pose = motion.poses.get(die.id)!
-      expect(pose.position[1]).toBeCloseTo(0.47, 1)
+      expect(pose.position[1]).toBeCloseTo(0.016, 3)
       expect(topFace(pose.rotation).face).toBe(die.value === JOKER ? 6 : die.value)
     })
     const settled = [...motion.poses.entries()]

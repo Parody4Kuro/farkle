@@ -1,3 +1,5 @@
+import { PresentationOptions } from './PresentationOptions'
+import type { ComfortPreferences } from '../storage/adventureStorage'
 import { DIE_DEFINITIONS } from '../game/dice'
 import { MODIFIERS } from '../game/modifiers'
 import { TARGET_SCORE_OPTIONS } from '../game/rules'
@@ -6,6 +8,8 @@ import { LoadoutEditor } from './LoadoutEditor'
 import { AccessibleDialog } from './AccessibleDialog'
 
 interface SettingsModalProps {
+  comfort?: ComfortPreferences
+  onComfort?: (value: ComfortPreferences) => void
   settings: GameSettings
   audioPreferences: AudioPreferences
   isFirstGame: boolean
@@ -26,6 +30,7 @@ const TARGET_LABELS: Record<number, string> = {
 }
 
 export function SettingsModal({
+  comfort, onComfort,
   settings,
   audioPreferences,
   isFirstGame,
@@ -71,6 +76,7 @@ export function SettingsModal({
           </label>
         </div>
 
+        {comfort && onComfort && <PresentationOptions value={comfort} onChange={(value) => onComfort({ ...comfort, ...value })} />}
         <LoadoutEditor value={{ dice: settings.dieLoadout, modifiers: settings.modifierIds }}
           inventory={{ dice: Object.fromEntries(DIE_DEFINITIONS.map((die) => [die.id, 6])), modifiers: MODIFIERS.filter((m) => !m.adventureOnly).map((m) => m.id) }}
           badgeLimit={4} onChange={(draft) => onUpdate({ dieLoadout: draft.dice, modifierIds: draft.modifiers })} />

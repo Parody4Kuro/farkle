@@ -1,0 +1,124 @@
+{
+  "machine": "Apple M4",
+  "ramBytes": 17179869184,
+  "contentViewport": "CDP 1920x1080; native GPU renderer; macOS window limited by attached display",
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "dpr": 1
+  },
+  "fullRollFrames": {
+    "samples": 165,
+    "medianMs": 16.699999999999818,
+    "p95Ms": 16.799999999999955,
+    "maxMs": 166.60000000000002,
+    "over33Ms": 1,
+    "over100Ms": 1
+  },
+  "frames": {
+    "engine": "three.js r185",
+    "frameP50": "16.70",
+    "frameP95": "17.00",
+    "triangles": "334856",
+    "drawCalls": "192",
+    "renderDpr": "1"
+  },
+  "resources": {
+    "intervalSeconds": 4.222,
+    "cpuSeconds": 3.1684449999999997,
+    "averageCpuPercent": 75.04606821411653,
+    "summedWorkingSetKiB": 1187664
+  },
+  "system": {
+    "at": 1790617193745,
+    "platform": "darwin",
+    "arch": "arm64",
+    "electron": "44.3.0",
+    "gpu": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "enabled_on",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    },
+    "processes": [
+      {
+        "pid": 81153,
+        "type": "Browser",
+        "cpu": {
+          "cumulativeCPUUsage": 1.502549,
+          "percentCPUUsage": 2.5365307336555456,
+          "idleWakeupsPerSecond": 5
+        },
+        "memory": {
+          "workingSetSize": 247024,
+          "peakWorkingSetSize": 300288
+        }
+      },
+      {
+        "pid": 81162,
+        "type": "GPU",
+        "cpu": {
+          "cumulativeCPUUsage": 0.942248,
+          "percentCPUUsage": 1.4701873673017238,
+          "idleWakeupsPerSecond": 105
+        },
+        "memory": {
+          "workingSetSize": 250432,
+          "peakWorkingSetSize": 282848
+        }
+      },
+      {
+        "pid": 81163,
+        "type": "Utility",
+        "cpu": {
+          "cumulativeCPUUsage": 0.062936,
+          "percentCPUUsage": 0.0024014493954931377,
+          "idleWakeupsPerSecond": 0
+        },
+        "memory": {
+          "workingSetSize": 49920,
+          "peakWorkingSetSize": 49920
+        }
+      },
+      {
+        "pid": 81165,
+        "type": "Tab",
+        "cpu": {
+          "cumulativeCPUUsage": 2.375574,
+          "percentCPUUsage": 3.4459719172052763,
+          "idleWakeupsPerSecond": 44
+        },
+        "memory": {
+          "workingSetSize": 592752,
+          "peakWorkingSetSize": 615424
+        }
+      },
+      {
+        "pid": 81173,
+        "type": "Utility",
+        "cpu": {
+          "cumulativeCPUUsage": 0.087239,
+          "percentCPUUsage": 0.04870646974720996,
+          "idleWakeupsPerSecond": 15
+        },
+        "memory": {
+          "workingSetSize": 47536,
+          "peakWorkingSetSize": 47536
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "remote": [],
+  "at": "2026-09-28T17:39:53.747Z"
+}

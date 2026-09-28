@@ -150,3 +150,15 @@ describe('versioned adventure storage', () => {
     expect(readAdventure({ getItem: () => { throw new Error('denied') }, setItem: () => {} }).run).toBeNull()
   })
 })
+
+it('migrates shared presentation preferences without overwriting an existing fast choice', async () => {
+  const { COMFORT_KEY, loadComfort } = await import('./adventureStorage')
+  const store = storage()
+  expect(loadComfort(store)).toMatchObject({ fast: false, cinematic: true, reducedMotion: false, quality: 'auto' })
+  store.setItem(COMFORT_KEY, JSON.stringify({ fast: true, dialogue: false }))
+  expect(loadComfort(store)).toMatchObject({ fast: true, cinematic: true, reducedMotion: false, quality: 'auto', dialogue: false })
+  store.setItem(COMFORT_KEY, JSON.stringify({ fast: false, cinematic: false, reducedMotion: true, quality: 'low' }))
+  expect(loadComfort(store)).toMatchObject({ cinematic: false, reducedMotion: true, quality: 'low' })
+  store.setItem(COMFORT_KEY, JSON.stringify({ quality: 'ultra-invalid' }))
+  expect(loadComfort(store).quality).toBe('auto')
+})

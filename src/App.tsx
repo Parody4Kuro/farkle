@@ -5,7 +5,9 @@ import './night.css'
 import './friends.css'
 import { FriendGame } from './components/FriendGame'
 import { TableStage } from './components/TableStage'
-import { ComicEffects } from './components/ComicEffects'
+import { usePresentationPreferences, usePresentationAction } from './hooks/usePresentation'
+import { opponentAt } from './game/opponents'
+import './presentation.css'
 import { RollPresentation } from './presentation/rollPresentation'
 import { ActionBar } from './components/ActionBar'
 import { GameOverModal } from './components/GameOverModal'
@@ -25,12 +27,12 @@ import { ScoreExplanation } from './components/ScoreExplanation'
 import { abilityReasons } from './game/selection'
 import { PauseDialog } from './components/PauseDialog'
 
-function ClassicGame({ onHome }: { onHome: () => void }) {
+function ClassicGame({ onHome, comfort, onComfort }: { onHome: () => void; comfort: ComfortPreferences; onComfort: (value: ComfortPreferences) => void }) {
   const [presentation] = useState(() => new RollPresentation())
   const {
     state,
-    playback, paused, canResume, pause, resume,
-    presentationEvent,
+    paused, canResume, pause, resume,
+
     settings,
     stats,
     audioPreferences,
@@ -41,7 +43,9 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
     selection,
     selectedScore,
     actions,
-  } = useDiceGame({ presentRoll: presentation.present, playback: presentation.playback })
+  } = useDiceGame({ presentation, playback: presentation.playback })
+  usePresentationPreferences(presentation, comfort)
+  const action = usePresentationAction(presentation)
   const humanTurn = state.currentPlayer === 'human'
   const hasSelection = state.rolledDice.some((die) => die.selected)
   const diceRemaining = state.rolledDice.length > 0
@@ -94,7 +98,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
         </div>
       )}
 
-      <ScoreBoard
+      <ScoreBoard presentation={presentation}
         scores={state.scores}
         currentPlayer={state.currentPlayer}
         targetScore={state.config.targetScore}
@@ -112,8 +116,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
           <span className="rule" />
         </div>
 
-        <TableStage state={state} presentation={presentation} selectionValid={selection.valid} onToggleDie={actions.toggleDie} />
-        <ComicEffects event={presentationEvent} playback={playback} />
+        <TableStage opponent={opponentAt(3)} state={state} presentation={presentation} selectionValid={selection.valid} onToggleDie={actions.toggleDie} />
         <div className="table-caption">
           <span className="caption-ornament" aria-hidden="true">✦</span>
           <span className={hasSelection && !selection.valid ? 'caption-invalid' : ''}>
@@ -127,7 +130,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
         </div>
         <div className="turn-dock">
 
-          <TurnPanel
+          <TurnPanel presentation={presentation}
             turnScore={state.turnScore}
             selectedScore={selectedScore}
             selectedValid={selection.valid}
@@ -149,7 +152,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
             abilities={abilities}
             modifierUsage={state.modifierUsage}
             abilityDisabledReasons={abilityReasons(state)}
-            paused={paused}
+            paused={paused || Boolean(action)}
             onRoll={actions.roll}
             onBank={actions.bank}
             onUseModifier={actions.useModifier}
@@ -166,7 +169,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
 
       {gameStarted && state.phase !== 'game_over' && paused && !settingsOpen && !rulesOpen && <PauseDialog canResume={canResume} onResume={resume} onHome={onHome} />}
       {settingsOpen && (
-        <SettingsModal
+        <SettingsModal comfort={comfort} onComfort={onComfort}
           settings={settings}
           audioPreferences={audioPreferences}
           isFirstGame={!gameStarted}
@@ -182,7 +185,7 @@ function ClassicGame({ onHome }: { onHome: () => void }) {
 
       {rulesOpen && <RulesModal onClose={() => actions.setRulesOpen(false)} />}
 
-      {state.phase === 'game_over' && state.winner && !settingsOpen && !rulesOpen && (
+      {!action && state.phase === 'game_over' && state.winner && !settingsOpen && !rulesOpen && (
         <GameOverModal
           winner={state.winner}
           humanScore={state.scores.human}
@@ -235,8 +238,8 @@ function App() {
     if (run) setProfile((current) => recordAdventure(current, run))
     setMode('lobby')
   }
-  if (mode === 'friends') return <FriendGame onHome={() => home()} />
-  if (mode === 'classic') return <ClassicGame onHome={() => home()} />
+  if (mode === 'friends') return <FriendGame comfort={comfort} onComfort={updateComfort} onHome={() => home()} />
+  if (mode === 'classic') return <ClassicGame comfort={comfort} onComfort={updateComfort} onHome={() => home()} />
   if (mode === 'adventure' && saved) return <AdventureGame key={saved.id} initial={saved} comfort={comfort} onComfort={updateComfort} onHome={home} onFinished={finish} appearanceUnlocked={profile.wins > 0} profileWarning={warning} />
   return <TavernLobby saved={saved} profile={profile} comfort={comfort} warning={warning} onComfort={updateComfort} onClassic={() => setMode('classic')} onFriends={() => setMode('friends')}
     onContinue={() => setMode('adventure')} onStart={(origin) => {

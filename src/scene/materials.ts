@@ -1,64 +1,88 @@
-import {
-  CanvasTexture, DataTexture, MeshBasicMaterial, MeshToonMaterial,
-  NearestFilter, RedFormat, SRGBColorSpace, BackSide,
-} from 'three'
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import { BoxGeometry, Color, Float32BufferAttribute, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
+import { FACE_NORMALS } from './physics/faces'
+import type { DieFace } from '../game/types'
+
+function pips(value: number): [number, number][] {
+  const points: [number, number][] = []
+  if (value % 2) points.push([0, 0])
+  if (value >= 2) points.push([-.24, -.24], [.24, .24])
+  if (value >= 4) points.push([-.24, .24], [.24, -.24])
+  if (value === 6) points.push([-.24, 0], [.24, 0])
+  return points
+}
+/** Sculpt the actual surface, with dark pigment inside each recessed bowl. */
+function carvedDie(jokerFace?: DieFace, emblem?: string) {
+  const geometry = new BoxGeometry(1, 1, 1, 40, 40, 40)
+  const positions = geometry.getAttribute('position'), colors: number[] = []
+  const inner = new Vector3(), corner = new Vector3()
+  const p = new Vector3(), normal = new Vector3(), tint = new Color()
+  for (let i = 0; i < positions.count; i++) {
+    p.fromBufferAttribute(positions, i)
+    inner.copy(p).clampScalar(-.432, .432); corner.copy(p).sub(inner).normalize(); p.copy(inner).addScaledVector(corner, .068)
+    let indentation = 0
+    for (const [face, n] of Object.entries(FACE_NORMALS)) {
+      normal.fromArray(n)
+      if (p.dot(normal) < .499) continue
+      const u = n[0] ? p.z : p.x, v = n[1] ? p.z : p.y
+      if (Number(face) === jokerFace) {
+        // Original engraved skull with eyes cut out of its silhouette.
+        const skull = (u * u / .052 + (v - .045) ** 2 / .06 < 1 || (Math.abs(u) < .145 && v > -.23 && v < -.04))
+        const eyes = (Math.abs(u) - .092) ** 2 / .0028 + (v - .07) ** 2 / .004 < 1
+        const teeth = v < -.14 && (Math.abs(u) < .018 || Math.abs(Math.abs(u) - .084) < .014)
+        if (skull && !eyes && !teeth) indentation = .033
+      } else for (const [x, y] of pips(Number(face))) {
+        const distance = Math.hypot(u - x, v - y), radius = .091
+        if (distance < radius) indentation = Math.max(indentation, .046 * Math.sqrt(1 - (distance / radius) ** 2))
+      }
+      // Each weighted die has its own engraved border outside the pip field.
+      // These marks never add dots that could be mistaken for a face value.
+      const a = Math.abs(u), b = Math.abs(v), edge = Math.max(a, b), along = Math.min(a, b)
+      const engraving = emblem === 'lucky-one' ? Math.abs(a - .375) + Math.abs(b - .375) < .040
+        : emblem === 'lucky-five' ? edge > .373 && edge < .406 && (Math.floor(along * 32) % 2 === 0)
+        : emblem === 'high-roller' ? edge > .35 && edge < .418 && Math.abs(edge - .382 - (along % .15 - .075) * .38) < .014
+        : emblem === 'odd-fellow' ? edge > .351 && edge < .425 && Math.abs(Math.sin((edge - .351) * Math.PI / .025)) < .44
+        : false
+      if (engraving) indentation = Math.max(indentation, .020)
+      p.addScaledVector(normal, -indentation)
+    }
+    positions.setXYZ(i, p.x, p.y, p.z)
+    tint.set(indentation > .014 ? '#28201b' : '#ffffff')
+    colors.push(tint.r, tint.g, tint.b)
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+  geometry.computeVertexNormals()
+  return geometry
+}
 
 export function createArt() {
-  const gradient = new DataTexture(new Uint8Array([35, 35, 110, 110, 110, 110, 110, 255]), 8, 1, RedFormat)
-  gradient.minFilter = NearestFilter
-  gradient.magFilter = NearestFilter
-  gradient.needsUpdate = true
-  const resources: { dispose: () => void }[] = [gradient]
-  const toon = (color: string) => {
-    const material = new MeshToonMaterial({ color, gradientMap: gradient })
-    resources.push(material)
-    return material
-  }
-  const ink = new MeshBasicMaterial({ color: '#291c20', side: BackSide })
-  resources.push(ink)
-  const colors = {
-    wood: toon('#a75f32'), woodLight: toon('#c58449'), woodDark: toon('#75402b'),
-    copper: toon('#d9a34e'), parchment: toon('#e3c38b'), wine: toon('#754339'),
-    wax: toon('#f5d29a'), dark: toon('#302b37'), green: toon('#49654f'),
-  }
-  const dice: Record<string, MeshToonMaterial> = {
-    standard: toon('#f7e3b6'), 'lucky-one': toon('#f1c360'),
-    'lucky-five': toon('#b7d2ba'), 'high-roller': toon('#aabedb'),
-    'odd-fellow': toon('#d5aece'), joker: toon('#d2b9da'),
-  }
-  const dieGeometry = new RoundedBoxGeometry(0.94, 0.94, 0.94, 3, 0.065)
-  resources.push(dieGeometry)
-  const pipTextures = Array.from({ length: 7 }, (_, i) => {
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = 128
-    const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#38252b'
-    if (i < 6) {
-      const v = i + 1
-      const pips: [number, number][] = []
-      if (v % 2) pips.push([64, 64])
-      if (v >= 2) pips.push([30, 30], [98, 98])
-      if (v >= 4) pips.push([98, 30], [30, 98])
-      if (v === 6) pips.push([30, 64], [98, 64])
-      for (const [x, y] of pips) {
-        ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill()
-      }
-    } else {
-      // Original geometric skull; no font glyph or downloaded artwork.
-      ctx.beginPath(); ctx.ellipse(64, 53, 36, 33, 0, 0, Math.PI * 2); ctx.fill()
-      ctx.fillRect(43, 70, 42, 28)
-      ctx.globalCompositeOperation = 'destination-out'
-      for (const x of [49, 79]) { ctx.beginPath(); ctx.ellipse(x, 52, 10, 12, 0, 0, Math.PI * 2); ctx.fill() }
-      ctx.beginPath(); ctx.moveTo(64, 63); ctx.lineTo(58, 74); ctx.lineTo(70, 74); ctx.fill()
-      ctx.fillRect(53, 85, 5, 13); ctx.fillRect(70, 85, 5, 13)
+  const resources: { dispose: () => void }[] = []
+  const loader = new TextureLoader()
+  const maps = (name: string, repeat: [number, number] = [1, 1]) => {
+    const texture = (kind: string) => {
+      const t = loader.load(`${import.meta.env.BASE_URL}art/materials/${name}-${kind}.jpg`)
+      t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(...repeat); t.anisotropy = 4
+      if (kind === 'color') t.colorSpace = SRGBColorSpace
+      resources.push(t); return t
     }
-    const texture = new CanvasTexture(canvas)
-    texture.colorSpace = SRGBColorSpace
-    const material = new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 })
-    resources.push(texture, material)
-    return material
-  })
-  return { colors, dice, ink, dieGeometry, pipTextures, dispose: () => resources.forEach((resource) => resource.dispose()) }
+    return { map: texture('color'), normalMap: texture('normal'), roughnessMap: texture('roughness'), normalScale: new Vector2(.45, .45) }
+  }
+  const material = (color: string, roughness = .7, metalness = 0) => {
+    const m = new MeshStandardMaterial({ color, roughness, metalness }); resources.push(m); return m
+  }
+  const wood = material('#c2a884'); Object.assign(wood, maps('wood', [2, 2]))
+  const leather = material('#80614e'); Object.assign(leather, maps('leather', [2, 1]))
+  const cloth = material('#485b4d'); Object.assign(cloth, maps('fabric', [3, 3]))
+  const colors = { wood, woodLight: wood, woodDark: material('#3d261c'), leather, cloth,
+    copper: material('#b18b50', .32, .82), parchment: material('#dbc6a0'), wine: material('#382723'),
+    wax: material('#ead8b1', .42), dark: material('#201d19'), green: cloth }
+  const dice: Record<string, MeshStandardMaterial> = {}
+  for (const [id, color] of Object.entries({ standard: '#f0e4c9', 'lucky-one': '#e9bd60', 'lucky-five': '#92bea8', 'high-roller': '#8faac1', 'odd-fellow': '#c79595', joker: '#bea3cb' })) {
+    dice[id] = material(color, .28); dice[id].vertexColors = true
+  }
+  const dieGeometry = carvedDie(), jokerGeometry = carvedDie(6)
+  const diceGeometry: Record<string, BoxGeometry> = { standard: dieGeometry, joker: jokerGeometry }
+  for (const id of ['lucky-one', 'lucky-five', 'high-roller', 'odd-fellow']) diceGeometry[id] = carvedDie(undefined, id)
+  resources.push(...Object.values(diceGeometry))
+  return { colors, dice, dieGeometry, diceGeometry, dispose: () => resources.forEach((r) => r.dispose()) }
 }
 export type TavernArt = ReturnType<typeof createArt>
