@@ -29,3 +29,10 @@
 - Final landing-camera follow build: 196 tests, lint, build and packaging passed; first-table browser recording and exact native 1080p rechecked. Final native sample median 16.7 ms / P95 16.8 ms / maximum 166.6 ms (one cold-load frame), superseding the prior performance sample.
 
 - Created and extracted the 181,773,554-byte ditto archive from feebaa7; strict code signature, ASAR, all dist/desktop files and package version match. SHA-256: 9550ebfe003ff06a1368f5a9017c715e3fc899573a806bfe0ed1662cf588b0e9.
+
+## Delivery completed
+- Initial HTTPS Git pushes timed out; the verified official SSH route successfully uploaded all 15 new LFS objects. Normal Git transport remained intermittent.
+- Used the reachable official GitHub Git Data API to publish the same blobs, trees and commits. Every object and commit SHA matched the local repository; the existing branch was fast-forwarded without rewriting history or changing global Git/SSH settings.
+- Remote delivery commit is fa74333ecc6d04df925a2c0782cb0a1baecccfa4, with application source feebaa756407f89b1009148ed7239549aa53763b.
+- All 15 distinct LFS objects returned HTTP 200 through their immutable public download URLs; each ETag matched its expected SHA-256 and reported length matched the local file. Local Git LFS fsck passed.
+- The earlier optional proxy question is resolved; no proxy or additional user action was required.

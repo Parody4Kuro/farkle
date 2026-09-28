@@ -1,0 +1,132 @@
+{
+  "repository": "Parody4Kuro/farkle",
+  "branch": "codex/mac-desktop-adventure",
+  "deliveryCommit": "fa74333ecc6d04df925a2c0782cb0a1baecccfa4",
+  "verifiedRemoteCommit": "fa74333ecc6d04df925a2c0782cb0a1baecccfa4",
+  "gitObjectTransport": "GitHub Git Data API; blob, tree and commit hashes preserved",
+  "lfsObjectCount": 15,
+  "lfsVerification": "Successful upload plus public download HEAD: every ETag matches the LFS SHA-256",
+  "verifiedAt": "2026-09-28T18:16:16.726751+00:00",
+  "files": [
+    {
+      "path": "artifacts/art-source/keeper.blend",
+      "sha256": "7d7c29472e696daf94234aa5caf0dddd9fa588f37f1035c6f45536e3af8be46c",
+      "bytes": 4928626,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/art-source/keeper.blend"
+    },
+    {
+      "path": "artifacts/art-source/mara.blend",
+      "sha256": "08190d9cee9328a826ac207dc718b8c7ea84eaee0e65e8387f71595059dbdf65",
+      "bytes": 5324084,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/art-source/mara.blend"
+    },
+    {
+      "path": "artifacts/art-source/osric.blend",
+      "sha256": "2ac6fb8c85db87375c4ce13cec9868854762fb791dbe8f986f4ec8496e62b468",
+      "bytes": 4812335,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/art-source/osric.blend"
+    },
+    {
+      "path": "artifacts/art-source/player-hands.blend",
+      "sha256": "28057a9065b820a5f6631800451ae75c015f30bb3536b553039cb24462680742",
+      "bytes": 2233263,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/art-source/player-hands.blend"
+    },
+    {
+      "path": "artifacts/art-source/rue.blend",
+      "sha256": "7f3fbc7ec0a30258eec2f3e2eb0159a3cb3d716209ce17149ab551b7484ed015",
+      "bytes": 4886414,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/art-source/rue.blend"
+    },
+    {
+      "path": "artifacts/macos/Tavern-Bones-mac-arm64.zip",
+      "sha256": "9550ebfe003ff06a1368f5a9017c715e3fc899573a806bfe0ed1662cf588b0e9",
+      "bytes": 181773554,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/macos/Tavern-Bones-mac-arm64.zip"
+    },
+    {
+      "path": "artifacts/realism/bust-sequence.webm",
+      "sha256": "fe3b2699c1b7252aa2b5c9a9fc03ba9af44ccb97410ae78a044b562d84336920",
+      "bytes": 734409,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/realism/bust-sequence.webm"
+    },
+    {
+      "path": "artifacts/realism/first-table.webm",
+      "sha256": "ab7ac39daad626891e298130f892982bcb563599d0c5c7fc0bed6efb57c4a511",
+      "bytes": 3834677,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/realism/first-table.webm"
+    },
+    {
+      "path": "artifacts/realism/hot-sequence.webm",
+      "sha256": "c440d0c1cfe053efa72555f303f1c388f351dd9e8a42d9ff9cf2f96ac899fa2d",
+      "bytes": 1284904,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/realism/hot-sequence.webm"
+    },
+    {
+      "path": "artifacts/realism/victory-sequence.webm",
+      "sha256": "a0c44d46e217968b317183c1d964356eadd47c341ba0a67fc531f246cc863ba7",
+      "bytes": 971758,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/artifacts/realism/victory-sequence.webm"
+    },
+    {
+      "path": "dist/art/characters/keeper.glb",
+      "sha256": "7733897daf6e0e743545ff16923b7921cb47fb0057f4d17a3328f3bb06bad8a1",
+      "bytes": 11845412,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/dist/art/characters/keeper.glb"
+    },
+    {
+      "path": "dist/art/characters/mara.glb",
+      "sha256": "f45e5af8435d3b2993989a62e8b40ae1be2647ec66edba8f3d6c3723935b7000",
+      "bytes": 11168212,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/dist/art/characters/mara.glb"
+    },
+    {
+      "path": "dist/art/characters/osric.glb",
+      "sha256": "6cf87f3ab1849dce1899e5632a7b988309f745ae2b81639720409f8882c0b2e9",
+      "bytes": 9999572,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/dist/art/characters/osric.glb"
+    },
+    {
+      "path": "dist/art/characters/player-hands.glb",
+      "sha256": "4ac368120e5df3ac7eeabe2e5256ad88c69d7a9a6a7fd56be8b86e50589472d8",
+      "bytes": 6460184,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/dist/art/characters/player-hands.glb"
+    },
+    {
+      "path": "dist/art/characters/rue.glb",
+      "sha256": "ad238c939ef79fd76f5090344ca248fce707304f39599bf1879d40267aa0f7ef",
+      "bytes": 11257148,
+      "httpStatus": 200,
+      "etagMatchesSha256": true,
+      "url": "https://media.githubusercontent.com/media/Parody4Kuro/farkle/fa74333ecc6d04df925a2c0782cb0a1baecccfa4/dist/art/characters/rue.glb"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ Implement the accepted full-scene upgrade: MakeHuman CC0 characters and rigged h
 2. **complete** — Implement shared cancellable action playback, visual snapshots, scoring animation and preferences.
 3. **complete** — Integrate rigged characters/hands, cup release physics, cameras and all game modes.
 4. **complete** — Run unit/lint/build, browser visual/functional/performance checks, and packaged Mac tests; repair findings.
-5. **in_progress** — Save evidence/licensing/source assets, rebuild and verify Mac archive, commit and push Git/LFS; verify remote.
+5. **complete** — Save evidence/licensing/source assets, rebuild and verify Mac archive, commit and push Git/LFS; verify remote.
 
 ## Decisions
 - Keep pure game rules and weighted outcomes authoritative. Rendering never rolls or awards points.
